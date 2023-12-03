@@ -1,0 +1,1 @@
+[Installing Micropython](https://docs.micropython.org/en/latest/esp8266/tutorial/intro.html#deploying-the-firmware)

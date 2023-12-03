@@ -1,0 +1,1 @@
+[NodeMCU Pinout and Functions Explained](https://www.make-it.ca/nodemcu-details-specifications/)
