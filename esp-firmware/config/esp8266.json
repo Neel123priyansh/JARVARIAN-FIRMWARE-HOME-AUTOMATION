@@ -1,0 +1,25 @@
+{
+    "devices": [
+        {
+            "name": "Status_Buzzer",
+            "description": "It is used to indicate the status of the device:\n Add status codes here.",
+            "type": "led",
+            "pin": "D0"
+        },
+        {
+            "name": "Internal_LED",
+            "description": "Internal LED on the board",
+            "type": "led",
+            "pin": "D3"
+        }
+    ],
+    "unusedPins": [
+        "D1",
+        "D2",
+        "D4",
+        "D5",
+        "D6",
+        "D7",
+        "D8"
+    ]
+}

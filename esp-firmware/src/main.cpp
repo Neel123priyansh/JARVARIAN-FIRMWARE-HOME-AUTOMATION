@@ -1,6 +1,12 @@
 #include <Arduino.h>
+#include <ArduinoJson.h>
+#include <FS.h>
 
 // Include Functionality according to the board
+#if !(defined(ESP32) || defined(ESP8266))
+#error "This code is intended to run on the ESP32 or ESP8266 platform!"
+#endif
+
 #ifdef ESP32
 #include <WiFi.h>
 #endif
@@ -11,26 +17,61 @@
 ESP8266WebServer server(80);
 #endif
 
-//! Define WiFi Credentials (will use env vars in future)
-//! Device is not appearing on router portal
-#define WIFI_SSID "SwastikWiFi"
-#define WIFI_PASS "jarvis@wifi"
-#define WIFI_HOSTNAME "IoT-Device"
-#define WIFI_IP IPAddress(192, 168, 0, 240)
-#define WIFI_GATEWAY IPAddress(192, 168, 0, 1)
-#define WIFI_SUBNET IPAddress(255, 255, 255, 0)
-#define WIFI_DNS IPAddress(192, 168, 0, 1) //! Set DNS such that it can't connect to the internet
+void blinkLED(int times, int delayTime)
+{
+  for (int i = 0; i < times; i++)
+  {
+    digitalWrite(LED_BUILTIN, HIGH);
+    delay(delayTime);
+    digitalWrite(LED_BUILTIN, LOW);
+    delay(delayTime);
+  }
+}
 
-void connectToWiFi() {
+void connectToWiFi()
+{
+#ifndef WIFI_SSID
+#error "Please define WIFI_SSID in build flags"
+#endif
+
+#ifndef WIFI_PASS
+#error "Please define WIFI_PASS in build flags"
+#endif
+
+#ifndef WIFI_HOSTNAME
+#error "Please define WIFI_HOSTNAME in build flags"
+#endif
+
+#ifndef WIFI_IP
+#error "Please define WIFI_IP in build flags"
+#endif
+
+#ifndef WIFI_GATEWAY
+#error "Please define WIFI_GATEWAY in build flags"
+#endif
+
+#ifndef WIFI_SUBNET
+#error "Please define WIFI_SUBNET in build flags"
+#endif
+
+#ifndef WIFI_DNS
+#error "Please define WIFI_DNS in build flags"
+#endif
+
   // Connect to Wi-Fi
-  WiFi.config(WIFI_IP, WIFI_GATEWAY, WIFI_SUBNET, WIFI_DNS);
+  //! Use Static IP
+  WiFi.config(
+      IPAddress(),
+      IPAddress(),
+      IPAddress(),
+      IPAddress());
   WiFi.setHostname(WIFI_HOSTNAME);
   WiFi.begin(WIFI_SSID, WIFI_PASS);
 
   // Wait for connection
   while (WiFi.status() != WL_CONNECTED)
   {
-    delay(1000);
+    blinkLED(1, 100);
     Serial.println("Connecting to WiFi...");
   }
 
@@ -39,13 +80,57 @@ void connectToWiFi() {
   Serial.println(String(WiFi.getHostname()) + "@" + WiFi.localIP().toString());
 }
 
-void handleRoot() {
+void handleRootGet()
+{
   server.send(200, "text/plain", "Hello from " + String(WIFI_HOSTNAME) + "!");
+  blinkLED(1, 100);
 }
 
+void methodNotAllowed()
+{
+  server.send(405, "text/plain", "405: Method Not Alloweed");
+  blinkLED(1, 100);
+}
+
+void notFound()
+{
+  server.send(404, "text/plain", "404: Not found");
+  blinkLED(1, 100);
+}
+
+void handleAvailablePinsPost()
+{
+  // Retrieve the API key from the headers
+  String apiKey = server.header("X-API-Key");
+
+  // Check if X-API-Key header was present
+  if (apiKey.length() == 0)
+  {
+    server.send(401, "text/plain", "Unauthorized: No API Key provided.");
+  }
+  else
+  {
+    // Check if the API key matches the expected value
+    if (apiKey.equals(API_KEY))
+    {
+      String content = "API Key accepted. Post request received. Sending available pin details.";
+      //! Use config/$DEVICE_NAME.json
+      server.send(200, "text/plain", content);
+    }
+    else
+    {
+      server.send(403, "text/plain", "Forbidden: Invalid API Key.");
+    }
+    blinkLED(1, 100);
+  }
+}
 
 void setup()
 {
+  // Set pin mode
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, HIGH);
+
   // Initialize Serial
   Serial.begin(115200);
 
@@ -53,7 +138,16 @@ void setup()
   connectToWiFi();
 
   // Define HTTP endpoint
-  server.on("/", HTTP_GET, handleRoot);
+  // 1. Handle Root(/) endpoint
+  server.on("/", HTTP_GET, handleRootGet);
+  server.on("/", HTTP_POST, methodNotAllowed);
+
+  // 2. Handle /available_pins endpoint
+  server.on("/available_pins", HTTP_GET, methodNotAllowed);
+  server.on("/available_pins", HTTP_POST, handleAvailablePinsPost);
+
+  // Handle 404
+  server.onNotFound(notFound);
 
   // Start server
   server.begin();
