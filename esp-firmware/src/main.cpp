@@ -1,6 +1,6 @@
 #include <Arduino.h>
+#include <PubSubClient.h>
 
-#include <checkFlags.h>
 #include <loadConfig.h>
 
 // Include Functionality according to the board
@@ -20,7 +20,7 @@ WebServer server(80);
 ESP8266WebServer server(80);
 #endif
 
-void connectToWiFi()
+void connectToWiFi(DynamicJsonDocument configDoc)
 {
   // Connect to Wi-Fi
   //! Use Static IP
@@ -29,8 +29,8 @@ void connectToWiFi()
       IPAddress(),
       IPAddress(),
       IPAddress());
-  WiFi.setHostname(WIFI_HOSTNAME);
-  WiFi.begin(WIFI_SSID, WIFI_PASS);
+  WiFi.setHostname(configDoc["wifi"]["hostname"]);
+  WiFi.begin(String(configDoc["wifi"]["ssid"]).c_str(), String(configDoc["wifi"]["password"]).c_str());
   // Wait for connection
   while (WiFi.status() != WL_CONNECTED)
   {
@@ -43,9 +43,9 @@ void connectToWiFi()
   Serial.println(String(WiFi.getHostname()) + "@" + WiFi.localIP().toString());
 }
 
-void handleRootGet()
+void handleRootGet(DynamicJsonDocument configDoc)
 {
-  server.send(200, "text/plain", "Hello from " + String(WIFI_HOSTNAME) + "!");
+  server.send(200, "text/plain", "Hello from " + String(configDoc["wifi"]["hostname"]) + "!");
   statusBuzzer(1, 100);
 }
 
@@ -61,33 +61,6 @@ void notFound()
   statusBuzzer(1, 100);
 }
 
-void handlePinDetailsPost()
-{
-  // Retrieve the API key from the headers
-  String apiKey = server.header("X-API-Key");
-
-  // Check if X-API-Key header was present
-  if (apiKey.length() == 0)
-  {
-    server.send(401, "text/plain", "Unauthorized: No API Key provided.");
-  }
-  else
-  {
-    // Check if the API key matches the expected value
-    if (apiKey.equals(API_KEY))
-    {
-      String content = "API Key accepted. Post request received. Sending available pin details.";
-      //! Send available pin details
-      server.send(200, "text/plain", content);
-    }
-    else
-    {
-      server.send(403, "text/plain", "Forbidden: Invalid API Key.");
-    }
-  }
-  statusBuzzer(1, 100);
-}
-
 void setup()
 {
   // Initialize Serial
@@ -97,26 +70,20 @@ void setup()
   // Delay after power on to allow for serial monitor to be connected and to make sure beeps are heard clearly.
   delay(3000);
 
-  // Print build flags
-  printBuildFlags();
-
   // Load config file
-  loadConfig();
+  DynamicJsonDocument configDoc = loadConfig();
 
   // Connect to WiFi
-  connectToWiFi();
+  connectToWiFi(configDoc);
 
   // Turn ON the built-in LED (In-Built LED works in Inverted Mode)
   digitalWrite(BUILTIN_LED, HIGH);
 
   // Define HTTP endpoint
-  // 1. Handle Root(/) endpoint
-  server.on("/", HTTP_GET, handleRootGet);
+  // Handle Root(/) endpoint
+  server.on("/", HTTP_GET, [&]()
+            { handleRootGet(configDoc); });
   server.on("/", HTTP_POST, methodNotAllowed);
-
-  // 2. Handle /pin_details endpoint
-  server.on("/pin_details", HTTP_GET, methodNotAllowed);
-  server.on("/pin_details", HTTP_POST, handlePinDetailsPost);
 
   // Handle 404
   server.onNotFound(notFound);

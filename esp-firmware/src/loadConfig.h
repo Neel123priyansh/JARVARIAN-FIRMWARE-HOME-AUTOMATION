@@ -13,6 +13,12 @@
 #define BUILTIN_LED D4
 #endif
 
+#ifdef DEBUG
+int debug = 1;
+#else
+int debug = 0;
+#endif
+
 void statusBuzzer(int times, int delayTime)
 {
     for (int i = 0; i < times; i++)
@@ -23,6 +29,7 @@ void statusBuzzer(int times, int delayTime)
         delay(delayTime);
     }
 }
+
 int mapPin(const String &pinString)
 {
     // static const uint8_t D0   = 16;
@@ -85,7 +92,28 @@ int mapPin(const String &pinString)
         return -1;
     }
 }
-void loadConfig()
+
+void printConfig(DynamicJsonDocument &configDoc)
+{
+    if (debug)
+    {
+        Serial.println("WIFI_SSID: \t" + String(configDoc["WIFI_SSID"].as<String>()));
+        Serial.println("WIFI_PASS: \t" + String(configDoc["WIFI_PASS"].as<String>()));
+        Serial.println("WIFI_HOSTNAME: \t" + String(configDoc["WIFI_HOSTNAME"].as<String>()));
+        Serial.println("WIFI_IP: \t" + String(configDoc["WIFI_IP"].as<String>()));
+        Serial.println("WIFI_GATEWAY: \t" + String(configDoc["WIFI_GATEWAY"].as<String>()));
+        Serial.println("WIFI_SUBNET: \t" + String(configDoc["WIFI_SUBNET"].as<String>()));
+        Serial.println("WIFI_DNS: \t" + String(configDoc["WIFI_DNS"].as<String>()));
+
+        Serial.println("MQTT_SERVER: \t" + String(configDoc["MQTT_SERVER"].as<String>()));
+        Serial.println("MQTT_PORT: \t" + String(configDoc["MQTT_PORT"].as<String>()));
+        Serial.println("MQTT_USERNAME: \t" + String(configDoc["MQTT_USERNAME"].as<String>()));
+        Serial.println("MQTT_PASSWORD: \t" + String(configDoc["MQTT_PASSWORD"].as<String>()));
+        Serial.println("MQTT_TOPIC: \t" + String(configDoc["MQTT_TOPIC"].as<String>()));
+    }
+}
+
+DynamicJsonDocument loadConfig()
 {
     // Mount LittleFS
     while (!LittleFS.begin())
@@ -113,14 +141,14 @@ void loadConfig()
     std::unique_ptr<char[]> buf(new char[size]);
     configFile.readBytes(buf.get(), size);
 
-    DynamicJsonDocument jsonDoc(1024);
-    DeserializationError error = deserializeJson(jsonDoc, buf.get());
+    DynamicJsonDocument configDoc(1024);
+    DeserializationError error = deserializeJson(configDoc, buf.get());
     if (error)
     {
         Serial.println("Failed to parse config file");
+        //! Triple Beep NOT Working
         statusBuzzer(3, 100);
         delay(2000);
-        return;
     }
     Serial.println("Parsed config file");
 
@@ -133,7 +161,7 @@ void loadConfig()
     Serial.println("Unmounted LittleFS");
 
     // Loop through the devices array in the JSON document
-    for (const auto &device : jsonDoc["devices"].as<JsonArray>())
+    for (const auto &device : configDoc["devices"].as<JsonArray>())
     {
         const String name = device["name"];
         const String pin = device["pin"];
@@ -146,11 +174,16 @@ void loadConfig()
             if (pinNumber != -1)
             {
                 pinMode(pinNumber, OUTPUT);
-                Serial.println("Initialized " + name + " on pin " + pin + "(GPIO "+ pinNumber + ")" + "as " + type);
+                Serial.println("Initialized " + name + " on pin " + pin + "(GPIO " + pinNumber + ")" + "as " + type);
             }
             else
             {
-                Serial.println("Invalid pin" + pin);
+                while (true)
+                {
+                    Serial.println("Invalid pin" + pin);
+                    statusBuzzer(4, 100);
+                    delay(2000);
+                }
             }
         }
         else
@@ -158,4 +191,6 @@ void loadConfig()
             Serial.println("Invalid pin type");
         }
     }
+    printConfig(configDoc);
+    return configDoc;
 }

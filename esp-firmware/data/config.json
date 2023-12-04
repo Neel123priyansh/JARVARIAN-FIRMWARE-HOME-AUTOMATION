@@ -1,25 +1,36 @@
 {
-    "devices": [
-        {
-            "name": "STATUS_BUZZER",
-            "description": "It is used to indicate the state of the device.",
-            "type": "OUTPUT",
-            "pin": "D0"
-        },
-        {
-            "name": "BUILTIN_LED",
-            "description": "Internal LED on the board",
-            "type": "OUTPUT",
-            "pin": "D4"
-        }
-    ],
-    "unusedPins": [
-        "D1",
-        "D2",
-        "D3",
-        "D5",
-        "D6",
-        "D7",
-        "D8"
-    ]
+  "wifi": {
+    "ssid": "SwastikWiFi",
+    "password": "jarvis@wifi",
+    "hostname": "IoT-Device-ESP8266",
+    "ip": "192.168.0.240",
+    "gateway": "192.168.0.1",
+    "subnet": "255.255.255.0",
+    "dns": "192.168.0.1"
+  },
+
+  "mqtt": {
+    "host": "192.168.0.254",
+    "port": 1883,
+    "username": "esp8266-test",
+    "password": "testpassword",
+    "topic": "TestTopic"
+  },
+
+  "devices": [
+    {
+      "name": "STATUS_BUZZER",
+      "description": "It is used to indicate the state of the device.",
+      "type": "OUTPUT",
+      "pin": "D0"
+    },
+    {
+      "name": "BUILTIN_LED",
+      "description": "Internal LED on the board",
+      "type": "OUTPUT",
+      "pin": "D4"
+    }
+  ],
+
+  "unusedPins": ["D1", "D2", "D3", "D5", "D6", "D7", "D8"]
 }
