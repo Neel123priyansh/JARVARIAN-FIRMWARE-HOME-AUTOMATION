@@ -1,6 +1,7 @@
 #include <Arduino.h>
-#include <ArduinoJson.h>
-#include <FS.h>
+
+#include <checkFlags.h>
+#include <loadConfig.h>
 
 // Include Functionality according to the board
 #if !(defined(ESP32) || defined(ESP8266))
@@ -10,56 +11,17 @@
 #ifdef ESP32
 #include <WiFi.h>
 #include <WebServer.h>
-using ServerType = WebServer;
+WebServer server(80);
 #endif
 
 #ifdef ESP8266
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
-using ServerType = ESP8266WebServer;
+ESP8266WebServer server(80);
 #endif
-
-void blinkLED(int times, int delayTime)
-{
-  for (int i = 0; i < times; i++)
-  {
-    digitalWrite(LED_BUILTIN, HIGH);
-    delay(delayTime);
-    digitalWrite(LED_BUILTIN, LOW);
-    delay(delayTime);
-  }
-}
 
 void connectToWiFi()
 {
-#ifndef WIFI_SSID
-#error "Please define WIFI_SSID in build flags"
-#endif
-
-#ifndef WIFI_PASS
-#error "Please define WIFI_PASS in build flags"
-#endif
-
-#ifndef WIFI_HOSTNAME
-#error "Please define WIFI_HOSTNAME in build flags"
-#endif
-
-#ifndef WIFI_IP
-#error "Please define WIFI_IP in build flags"
-#endif
-
-#ifndef WIFI_GATEWAY
-#error "Please define WIFI_GATEWAY in build flags"
-#endif
-
-#ifndef WIFI_SUBNET
-#error "Please define WIFI_SUBNET in build flags"
-#endif
-
-#ifndef WIFI_DNS
-#error "Please define WIFI_DNS in build flags"
-#endif
-
   // Connect to Wi-Fi
   //! Use Static IP
   WiFi.config(
@@ -72,32 +34,34 @@ void connectToWiFi()
   // Wait for connection
   while (WiFi.status() != WL_CONNECTED)
   {
-    blinkLED(1, 100);
+    statusBuzzer(2, 100);
     Serial.println("Connecting to WiFi...");
+    delay(2000); // 2s delay
   }
 
-    Serial.println("Connected to the WiFi network"+WiFi.localIP().toString());
+  Serial.println("Connected to the WiFi network");
+  Serial.println(String(WiFi.getHostname()) + "@" + WiFi.localIP().toString());
 }
 
 void handleRootGet()
 {
   server.send(200, "text/plain", "Hello from " + String(WIFI_HOSTNAME) + "!");
-  blinkLED(1, 100);
+  statusBuzzer(1, 100);
 }
 
 void methodNotAllowed()
 {
   server.send(405, "text/plain", "405: Method Not Alloweed");
-  blinkLED(1, 100);
+  statusBuzzer(1, 100);
 }
 
 void notFound()
 {
   server.send(404, "text/plain", "404: Not found");
-  blinkLED(1, 100);
+  statusBuzzer(1, 100);
 }
 
-void handleAvailablePinsPost()
+void handlePinDetailsPost()
 {
   // Retrieve the API key from the headers
   String apiKey = server.header("X-API-Key");
@@ -113,37 +77,46 @@ void handleAvailablePinsPost()
     if (apiKey.equals(API_KEY))
     {
       String content = "API Key accepted. Post request received. Sending available pin details.";
-      //! Use config/$DEVICE_NAME.json
+      //! Send available pin details
       server.send(200, "text/plain", content);
     }
     else
     {
       server.send(403, "text/plain", "Forbidden: Invalid API Key.");
     }
-    blinkLED(1, 100);
   }
+  statusBuzzer(1, 100);
 }
 
 void setup()
 {
-  // Set pin mode
-  pinMode(LED_BUILTIN, OUTPUT);
-  digitalWrite(LED_BUILTIN, HIGH);
-
   // Initialize Serial
   Serial.begin(115200);
+  Serial.println("Serial initialized");
+
+  // Delay after power on to allow for serial monitor to be connected and to make sure beeps are heard clearly.
+  delay(3000);
+
+  // Print build flags
+  printBuildFlags();
+
+  // Load config file
+  loadConfig();
 
   // Connect to WiFi
   connectToWiFi();
+
+  // Turn ON the built-in LED (In-Built LED works in Inverted Mode)
+  digitalWrite(BUILTIN_LED, HIGH);
 
   // Define HTTP endpoint
   // 1. Handle Root(/) endpoint
   server.on("/", HTTP_GET, handleRootGet);
   server.on("/", HTTP_POST, methodNotAllowed);
 
-  // 2. Handle /available_pins endpoint
-  server.on("/available_pins", HTTP_GET, methodNotAllowed);
-  server.on("/available_pins", HTTP_POST, handleAvailablePinsPost);
+  // 2. Handle /pin_details endpoint
+  server.on("/pin_details", HTTP_GET, methodNotAllowed);
+  server.on("/pin_details", HTTP_POST, handlePinDetailsPost);
 
   // Handle 404
   server.onNotFound(notFound);
@@ -154,8 +127,5 @@ void setup()
 }
 void loop()
 {
-    server.handleClient();
-    
+  server.handleClient();
 }
-
-  
