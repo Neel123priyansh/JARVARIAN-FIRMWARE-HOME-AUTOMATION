@@ -4,7 +4,7 @@
 #include <LittleFS.h>
 
 #ifdef ESP32
-// #define STATUS_BUZZER D0
+#define STATUS_BUZZER 2
 // #define BUILTIN_LED D3
 #endif
 
@@ -18,6 +18,8 @@ int debug = 1;
 #else
 int debug = 0;
 #endif
+
+using JsonDocumentType = ArduinoJson::V6213PB2::DynamicJsonDocument;
 
 void statusBuzzer(int times, int delayTime)
 {
@@ -93,35 +95,39 @@ int mapPin(const String &pinString)
     }
 }
 
-void printConfig(DynamicJsonDocument &configDoc)
+void printConfig(JsonDocumentType &configDoc)
 {
     if (debug)
     {
-        Serial.println("WIFI_SSID: \t" + String(configDoc["WIFI_SSID"].as<String>()));
-        Serial.println("WIFI_PASS: \t" + String(configDoc["WIFI_PASS"].as<String>()));
-        Serial.println("WIFI_HOSTNAME: \t" + String(configDoc["WIFI_HOSTNAME"].as<String>()));
-        Serial.println("WIFI_IP: \t" + String(configDoc["WIFI_IP"].as<String>()));
-        Serial.println("WIFI_GATEWAY: \t" + String(configDoc["WIFI_GATEWAY"].as<String>()));
-        Serial.println("WIFI_SUBNET: \t" + String(configDoc["WIFI_SUBNET"].as<String>()));
-        Serial.println("WIFI_DNS: \t" + String(configDoc["WIFI_DNS"].as<String>()));
+        Serial.println("WIFI_SSID: \t" + String(configDoc["wifi"]["ssid"].as<String>()));
+        Serial.println("WIFI_PASS: \t" + String(configDoc["wifi"]["password"].as<String>()));
+        Serial.println("WIFI_HOSTNAME: \t" + String(configDoc["wifi"]["hostname"].as<String>()));
+        Serial.println("WIFI_IP: \t" + String(configDoc["wifi"]["ip"].as<String>()));
+        Serial.println("WIFI_GATEWAY: \t" + String(configDoc["wifi"]["gateway"].as<String>()));
+        Serial.println("WIFI_SUBNET: \t" + String(configDoc["wifi"]["subnet"].as<String>()));
+        Serial.println("WIFI_DNS: \t" + String(configDoc["wifi"]["dns"].as<String>()));
 
-        Serial.println("MQTT_SERVER: \t" + String(configDoc["MQTT_SERVER"].as<String>()));
-        Serial.println("MQTT_PORT: \t" + String(configDoc["MQTT_PORT"].as<String>()));
-        Serial.println("MQTT_USERNAME: \t" + String(configDoc["MQTT_USERNAME"].as<String>()));
-        Serial.println("MQTT_PASSWORD: \t" + String(configDoc["MQTT_PASSWORD"].as<String>()));
-        Serial.println("MQTT_TOPIC: \t" + String(configDoc["MQTT_TOPIC"].as<String>()));
+        Serial.println("MQTT_SERVER: \t" + String(configDoc["mqtt"]["host"].as<String>()));
+        Serial.println("MQTT_PORT: \t" + String(configDoc["mqtt"]["port"].as<String>()));
+        Serial.println("MQTT_USERNAME: \t" + String(configDoc["mqtt"]["username"].as<String>()));
+        Serial.println("MQTT_PASSWORD: \t" + String(configDoc["mqtt"]["password"].as<String>()));
+        Serial.println("MQTT_TOPIC: \t" + String(configDoc["mqtt"]["topic"].as<String>()));
     }
 }
 
-DynamicJsonDocument loadConfig()
+JsonDocumentType loadConfig(JsonDocumentType &configDoc)
 {
     // Mount LittleFS
     while (!LittleFS.begin())
     {
-        Serial.println("Failed to mount LittleFS");
-        //! Triple Beep NOT Working
-        statusBuzzer(3, 100);
-        delay(2000);
+        while (true)
+        {
+            Serial.println("Failed to mount LittleFS");
+
+            statusBuzzer(3, 100);
+
+            delay(2000);
+        }
     }
     Serial.println("Mounted LittleFS");
 
@@ -129,10 +135,14 @@ DynamicJsonDocument loadConfig()
     File configFile = LittleFS.open("config.json", "r");
     while (!configFile)
     {
-        Serial.println("Failed to open config file");
-        //! Triple Beep NOT Working
-        statusBuzzer(3, 100);
-        delay(2000);
+        while (true)
+        {
+            Serial.println("Failed to open config file");
+
+            statusBuzzer(3, 100);
+
+            delay(2000);
+        }
     }
     Serial.println("Opened config file");
 
@@ -141,14 +151,17 @@ DynamicJsonDocument loadConfig()
     std::unique_ptr<char[]> buf(new char[size]);
     configFile.readBytes(buf.get(), size);
 
-    DynamicJsonDocument configDoc(1024);
     DeserializationError error = deserializeJson(configDoc, buf.get());
     if (error)
     {
-        Serial.println("Failed to parse config file");
-        //! Triple Beep NOT Working
-        statusBuzzer(3, 100);
-        delay(2000);
+        while (true)
+        {
+            Serial.println("Failed to parse config file");
+
+            statusBuzzer(3, 100);
+
+            delay(2000);
+        }
     }
     Serial.println("Parsed config file");
 
@@ -174,7 +187,7 @@ DynamicJsonDocument loadConfig()
             if (pinNumber != -1)
             {
                 pinMode(pinNumber, OUTPUT);
-                Serial.println("Initialized " + name + " on pin " + pin + "(GPIO " + pinNumber + ")" + "as " + type);
+                Serial.println("Initialized " + name + " on pin " + pin + "(GPIO " + pinNumber + ") " + "as " + type);
             }
             else
             {

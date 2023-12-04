@@ -20,7 +20,10 @@ WebServer server(80);
 ESP8266WebServer server(80);
 #endif
 
-void connectToWiFi(DynamicJsonDocument configDoc)
+WiFiClient espClient;
+PubSubClient mqttclient(espClient);
+
+void connectToWiFi(JsonDocumentType &configDoc)
 {
   // Connect to Wi-Fi
   //! Use Static IP
@@ -40,12 +43,14 @@ void connectToWiFi(DynamicJsonDocument configDoc)
   }
 
   Serial.println("Connected to the WiFi network");
-  Serial.println(String(WiFi.getHostname()) + "@" + WiFi.localIP().toString());
+  Serial.println(String(WiFi.getHostname()) + " @ " + WiFi.localIP().toString());
 }
 
-void handleRootGet(DynamicJsonDocument configDoc)
+void handleRootGet(JsonDocumentType &configDoc)
 {
+  //! Returns NULL.
   server.send(200, "text/plain", "Hello from " + String(configDoc["wifi"]["hostname"]) + "!");
+  //! Print all details in configDoc.
   statusBuzzer(1, 100);
 }
 
@@ -61,6 +66,21 @@ void notFound()
   statusBuzzer(1, 100);
 }
 
+void callback(char *topic, byte *payload, unsigned int length)
+{
+  // Serial.print("Message arrived in topic: ");
+  // Serial.println(topic);
+
+  // Serial.print("Message:");
+  // for (int i = 0; i < length; i++)
+  // {
+  //   Serial.print((char)payload[i]);
+  // }
+  // Serial.println();
+
+  // Serial.println("-----------------------");
+}
+
 void setup()
 {
   // Initialize Serial
@@ -71,13 +91,14 @@ void setup()
   delay(3000);
 
   // Load config file
-  DynamicJsonDocument configDoc = loadConfig();
+  DynamicJsonDocument configDoc(2048);
+  configDoc = loadConfig(configDoc);
 
   // Connect to WiFi
   connectToWiFi(configDoc);
 
   // Turn ON the built-in LED (In-Built LED works in Inverted Mode)
-  digitalWrite(BUILTIN_LED, HIGH);
+  digitalWrite(BUILTIN_LED, LOW);
 
   // Define HTTP endpoint
   // Handle Root(/) endpoint
@@ -91,8 +112,28 @@ void setup()
   // Start server
   server.begin();
   Serial.println("HTTP server started");
+
+  // Connect to MQTT Broker
+  mqttclient.setServer(String(configDoc["mqtt"]["host"]).c_str(), configDoc["mqtt"]["port"]);
+  mqttclient.setCallback(callback);
 }
 void loop()
 {
   server.handleClient();
+
+  // if (!mqttclient.connected())
+  // {
+  //   Serial.println("Connecting to MQTT Broker...");
+  //   if (mqttclient.connect(String(configDoc["wifi"]["hostname"]).c_str(), String(configDoc["mqtt"]["username"]).c_str(), String(configDoc["mqtt"]["password"]).c_str()))
+  //   {
+  //     Serial.println("Connected to MQTT Broker");
+  //     mqttclient.subscribe(String(configDoc["mqtt"]["topic"]).c_str());
+  //   }
+  //   else
+  //   {
+  //     Serial.println("MQTT connection failed");
+  //     Serial.println(mqttclient.state());
+  //     delay(2000);
+  //   }
+  // }
 }
