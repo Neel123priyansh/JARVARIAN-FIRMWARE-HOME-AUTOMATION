@@ -9,12 +9,14 @@
 
 #ifdef ESP32
 #include <WiFi.h>
+#include <WebServer.h>
+using ServerType = WebServer;
 #endif
 
 #ifdef ESP8266
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
-ESP8266WebServer server(80);
+using ServerType = ESP8266WebServer;
 #endif
 
 void blinkLED(int times, int delayTime)
@@ -67,7 +69,6 @@ void connectToWiFi()
       IPAddress());
   WiFi.setHostname(WIFI_HOSTNAME);
   WiFi.begin(WIFI_SSID, WIFI_PASS);
-
   // Wait for connection
   while (WiFi.status() != WL_CONNECTED)
   {
@@ -75,9 +76,7 @@ void connectToWiFi()
     Serial.println("Connecting to WiFi...");
   }
 
-  // Connected to WiFi
-  Serial.println("Connected to WiFi");
-  Serial.println(String(WiFi.getHostname()) + "@" + WiFi.localIP().toString());
+    Serial.println("Connected to the WiFi network"+WiFi.localIP().toString());
 }
 
 void handleRootGet()
@@ -153,9 +152,10 @@ void setup()
   server.begin();
   Serial.println("HTTP server started");
 }
-
 void loop()
 {
-  // Handle HTTP requests
-  server.handleClient();
+    server.handleClient();
+    
 }
+
+  
