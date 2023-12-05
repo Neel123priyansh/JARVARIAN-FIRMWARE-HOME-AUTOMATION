@@ -102,6 +102,13 @@ void setup()
   Serial.begin(115200);
   Serial.println("Serial initialized");
 
+  // Initialize Buzzer and In-Built LED
+  pinMode(STATUS_BUZZER, OUTPUT);
+  pinMode(BUILTIN_LED, OUTPUT);
+
+  // Turn ON the built-in LED (In-Built LED works in Inverted Mode)
+  digitalWrite(BUILTIN_LED, LOW);
+
   // Delay after power on to allow for serial monitor to be connected and to make sure beeps are heard clearly.
   delay(3000);
 
@@ -111,9 +118,6 @@ void setup()
 
   // Connect to WiFi
   connectToWiFi(configDoc);
-
-  // Turn ON the built-in LED (In-Built LED works in Inverted Mode)
-  digitalWrite(BUILTIN_LED, LOW);
 
   // Define HTTP endpoint
   // Handle Root(/) endpoint
