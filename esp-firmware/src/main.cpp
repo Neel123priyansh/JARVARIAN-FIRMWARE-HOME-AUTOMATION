@@ -125,7 +125,8 @@ void setup()
   server.on("/", HTTP_POST, methodNotAllowed);
 
   //! Handle Config(/config) endpoint
-  server.on("/config", HTTP_GET, [&configDoc]() { handleConfigGet(configDoc); });
+  server.on("/config", HTTP_GET, [&configDoc]()
+            { handleConfigGet(configDoc); });
   server.on("/config", HTTP_POST, methodNotAllowed);
 
   // Handle 404
