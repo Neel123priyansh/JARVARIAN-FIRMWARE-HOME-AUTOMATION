@@ -25,14 +25,22 @@ PubSubClient mqttclient(espClient);
 
 void connectToWiFi(JsonDocumentType &configDoc)
 {
-  // Connect to Wi-Fi
-  //! Use Static IP
-  WiFi.config(
-      IPAddress(),
-      IPAddress(),
-      IPAddress(),
-      IPAddress());
+  // Connect to WiFi network
+  String static_ip = configDoc["wifi"]["ip"].as<String>();
+  String gateway = configDoc["wifi"]["gateway"].as<String>();
+  String subnet = configDoc["wifi"]["subnet"].as<String>();
+  String dns = configDoc["wifi"]["dns"].as<String>();
+  IPAddress ip;
+  IPAddress gateway_ip;
+  IPAddress subnet_ip;
+  IPAddress dns_ip;
+  ip.fromString(static_ip);
+  gateway_ip.fromString(gateway);
+  subnet_ip.fromString(subnet);
+  dns_ip.fromString(dns);
+  WiFi.config(ip, gateway_ip, subnet_ip, dns_ip);
   WiFi.setHostname(configDoc["wifi"]["hostname"]);
+  
   WiFi.begin(String(configDoc["wifi"]["ssid"]).c_str(), String(configDoc["wifi"]["password"]).c_str());
   // Wait for connection
   while (WiFi.status() != WL_CONNECTED)
