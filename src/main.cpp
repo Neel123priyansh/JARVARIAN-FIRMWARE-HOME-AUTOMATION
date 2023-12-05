@@ -42,6 +42,7 @@ void connectToWiFi(JsonDocumentType &configDoc)
   WiFi.setHostname(configDoc["wifi"]["hostname"]);
   
   WiFi.begin(String(configDoc["wifi"]["ssid"]).c_str(), String(configDoc["wifi"]["password"]).c_str());
+
   // Wait for connection
   while (WiFi.status() != WL_CONNECTED)
   {
@@ -151,6 +152,12 @@ void setup()
 void loop()
 {
   server.handleClient();
+
+  if (WiFi.status() != WL_CONNECTED)
+  {
+    Serial.println("WiFi connection lost.. Reconnecting..");
+    connectToWiFi(configDoc);
+  }
 
   // if (!mqttclient.connected())
   // {
