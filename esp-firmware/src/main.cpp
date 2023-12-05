@@ -46,11 +46,26 @@ void connectToWiFi(JsonDocumentType &configDoc)
   Serial.println(String(WiFi.getHostname()) + " @ " + WiFi.localIP().toString());
 }
 
-void handleRootGet(JsonDocumentType &configDoc)
+void handleRootGet()
 {
-  //! Returns NULL.
   server.send(200, "text/plain", "Hello from " + String(WiFi.hostname()) + " @ " + WiFi.localIP().toString());
-  //! Print all details in configDoc.
+  statusBuzzer(1, 100);
+}
+
+//! Remove this function later. This is just for testing.
+void printConfigDoc(JsonDocumentType &configDoc)
+{
+  String configString;
+  serializeJson(configDoc, configString);
+  Serial.println(configString);
+}
+
+void handleConfigGet(JsonDocumentType &configDoc)
+{
+  String configString;
+  serializeJson(configDoc, configString);
+  Serial.println(configString);
+  server.send(200, "application/json", configString);
   statusBuzzer(1, 100);
 }
 
@@ -102,9 +117,12 @@ void setup()
 
   // Define HTTP endpoint
   // Handle Root(/) endpoint
-  server.on("/", HTTP_GET, [&]()
-            { handleRootGet(configDoc); });
+  server.on("/", HTTP_GET, handleRootGet);
   server.on("/", HTTP_POST, methodNotAllowed);
+
+  //! Handle Config(/config) endpoint
+  server.on("/config", HTTP_GET, [&configDoc]() { handleConfigGet(configDoc); });
+  server.on("/config", HTTP_POST, methodNotAllowed);
 
   // Handle 404
   server.onNotFound(notFound);
@@ -114,8 +132,8 @@ void setup()
   Serial.println("HTTP server started");
 
   // Connect to MQTT Broker
-  mqttclient.setServer(String(configDoc["mqtt"]["host"]).c_str(), configDoc["mqtt"]["port"]);
-  mqttclient.setCallback(callback);
+  // mqttclient.setServer(String(configDoc["mqtt"]["host"]).c_str(), configDoc["mqtt"]["port"]);
+  // mqttclient.setCallback(callback);
 }
 void loop()
 {
