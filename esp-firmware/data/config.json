@@ -28,9 +28,32 @@
       "name": "BUILTIN_LED",
       "description": "Internal LED on the board",
       "type": "OUTPUT",
+      "pin": "D3"
+    },
+    {
+      "name": "BLUE_LED",
+      "description": "Blue LED",
+      "type": "OUTPUT",
+      "pin": "D1"
+    },
+    {
+      "name": "YELLOW_LED",
+      "description": "Internal LED on the board",
+      "type": "OUTPUT",
+      "pin": "D2"
+    },
+    {
+      "name": "RED_LED",
+      "description": "Internal LED on the board",
+      "type": "OUTPUT",
       "pin": "D4"
+    },
+    {
+      "name": "GREEN_LED",
+      "description": "Internal LED on the board",
+      "type": "OUTPUT",
+      "pin": "D5"
     }
   ],
-
-  "unusedPins": ["D1", "D2", "D3", "D5", "D6", "D7", "D8"]
+  "unusedPins": ["D6", "D7", "D8"]
 }

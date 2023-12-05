@@ -1,25 +1,17 @@
 {
-    "devices": [
-        {
-            "name": "STATUS_BUZZER",
-            "description": "It is used to indicate the state of the device.",
-            "type": "OUTPUT",
-            "pin": "D0"
-        },
-        {
-            "name": "BUILTIN_LED",
-            "description": "Internal LED on the board",
-            "type": "OUTPUT",
-            "pin": "D3"
-        }
-    ],
-    "unusedPins": [
-        "D1",
-        "D2",
-        "D4",
-        "D5",
-        "D6",
-        "D7",
-        "D8"
-    ]
+  "devices": [
+    {
+      "name": "STATUS_BUZZER",
+      "description": "It is used to indicate the state of the device.",
+      "type": "OUTPUT",
+      "pin": "D0"
+    },
+    {
+      "name": "BUILTIN_LED",
+      "description": "Internal LED on the board",
+      "type": "OUTPUT",
+      "pin": "D3"
+    }
+  ],
+  "unusedPins": ["D1", "D2", "D4", "D5", "D6", "D7", "D8"]
 }
