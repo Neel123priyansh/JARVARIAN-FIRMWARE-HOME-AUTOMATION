@@ -49,7 +49,7 @@ void connectToWiFi(JsonDocumentType &configDoc)
 void handleRootGet(JsonDocumentType &configDoc)
 {
   //! Returns NULL.
-  server.send(200, "text/plain", "Hello from " + String(configDoc["wifi"]["hostname"]) + "!");
+  server.send(200, "text/plain", "Hello from " + String(WiFi.hostname()) + " @ " + WiFi.localIP().toString());
   //! Print all details in configDoc.
   statusBuzzer(1, 100);
 }
