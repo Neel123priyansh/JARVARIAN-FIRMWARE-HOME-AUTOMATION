@@ -11,7 +11,7 @@
 
   "mqtt": {
     "host": "192.168.0.254",
-    "port": 1883,
+    "port": "1883",
     "username": "esp8266-test",
     "password": "testpassword",
     "topic": "TestTopic"

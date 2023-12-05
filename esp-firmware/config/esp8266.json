@@ -1,4 +1,21 @@
 {
+  "wifi": {
+    "ssid": "",
+    "password": "",
+    "hostname": "",
+    "ip": "",
+    "gateway": "",
+    "subnet": "",
+    "dns": ""
+  },
+
+  "mqtt": {
+    "host": "",
+    "port": "",
+    "username": "",
+    "password": "",
+    "topic": ""
+  },
   "devices": [
     {
       "name": "STATUS_BUZZER",
