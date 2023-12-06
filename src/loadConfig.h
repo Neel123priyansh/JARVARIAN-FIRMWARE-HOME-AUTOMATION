@@ -115,7 +115,7 @@ void printConfig(JsonDocumentType &configDoc)
     }
 }
 
-JsonDocumentType loadConfig(JsonDocumentType &configDoc)
+void mountLittleFS()
 {
     // Mount LittleFS
     while (!LittleFS.begin())
@@ -130,8 +130,62 @@ JsonDocumentType loadConfig(JsonDocumentType &configDoc)
         }
     }
     Serial.println("Mounted LittleFS");
+}
 
-    // Read the config file
+File openConfigFile()
+{
+    // Mount LittleFS
+    mountLittleFS();
+
+    // Open the config file
+    File configFile = LittleFS.open("config.json", "r");
+    while (!configFile)
+    {
+        while (true)
+        {
+            Serial.println("Failed to open config file");
+
+            statusBuzzer(3, 100);
+
+            delay(2000);
+        }
+    }
+    Serial.println("Opened config file");
+
+    return configFile;
+}
+
+void closeConfigFile(File configFile)
+{
+    // Close the config file
+    configFile.close();
+    Serial.println("Closed config file");
+
+    // Unmount LittleFS
+    LittleFS.end();
+    Serial.println("Unmounted LittleFS");
+}
+
+JsonDocumentType loadConfig(JsonDocumentType &configDoc)
+{
+    // Mount LittleFS and open the config file
+    // File configFile = openConfigFile();
+
+    // Mount LittleFS
+    while (!LittleFS.begin())
+    {
+        while (true)
+        {
+            Serial.println("Failed to mount LittleFS");
+
+            statusBuzzer(3, 100);
+
+            delay(2000);
+        }
+    }
+    Serial.println("Mounted LittleFS");
+
+    // Open the config file
     File configFile = LittleFS.open("config.json", "r");
     while (!configFile)
     {
@@ -164,6 +218,9 @@ JsonDocumentType loadConfig(JsonDocumentType &configDoc)
         }
     }
     Serial.println("Parsed config file");
+
+    // Close the config file and unmount LittleFS
+    // closeConfigFile(configFile);
 
     // Close the config file
     configFile.close();
