@@ -107,20 +107,19 @@ void handleConfigGet(JsonDocumentType &configDoc)
   statusBuzzer(1, 100);
 }
 
-
 // void handleConfigGet()
 // {
-  // Load config file
-  // File configFile = openConfigFile();
+// Load config file
+// File configFile = openConfigFile();
 
-  // Send the config file
-  // server.streamFile(configFile, "application/json");
+// Send the config file
+// server.streamFile(configFile, "application/json");
 
-  // Close the file
-  // closeConfigFile(configFile);
+// Close the file
+// closeConfigFile(configFile);
 
-  // Buzzer status
-  // statusBuzzer(1, 100);
+// Buzzer status
+// statusBuzzer(1, 100);
 // }
 
 void methodNotAllowed()
@@ -264,11 +263,19 @@ void loop()
 {
   server.handleClient();
 
-  // if (WiFi.status() != WL_CONNECTED)
-  // {
-  //   Serial.println("WiFi connection lost.. Reconnecting..");
-  //   connectToWiFi(configDoc);
-  // }
+  if (WiFi.isConnected() == false)
+  {
+    Serial.println("WiFi connection lost. Reconnecting...");
+    WiFi.reconnect();
+
+    while (WiFi.status() != WL_CONNECTED)
+    {
+      delay(1000);
+      Serial.println("Reconnecting to WiFi... @ " + WiFi.localIP().toString());
+    }
+
+    Serial.println("Reconnected to WiFi @" + WiFi.localIP().toString());
+  }
 
   if (!mqttclient.connected())
   {
