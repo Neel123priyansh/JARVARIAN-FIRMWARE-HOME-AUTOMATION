@@ -420,9 +420,9 @@ void loop()
       mqttclient.publish(configDoc["mqtt"]["topic"].as<String>().c_str(), "keep-alive");
     else
     {
-      connectToMQTT(configDoc);
       Serial.println("-----------------------");
       Serial.println("Connection lost.. Reconnecting..");
+      connectToMQTT(configDoc);
     }
   }
   mqttclient.loop();
