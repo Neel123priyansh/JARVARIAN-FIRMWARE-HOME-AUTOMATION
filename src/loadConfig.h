@@ -3,23 +3,6 @@
 #include <ArduinoJson.h>
 #include <LittleFS.h>
 
-#ifdef ESP32
-// can use both at same pins.
-#define STATUS_BUZZER 27
-#define BUILTIN_LED 2
-#endif
-
-#ifdef ESP8266
-#define STATUS_BUZZER D0
-#define BUILTIN_LED D4
-#endif
-
-#ifdef DEBUG
-int debug = 1;
-#else
-int debug = 0;
-#endif
-
 using JsonDocumentType = ArduinoJson::V6213PB2::DynamicJsonDocument;
 
 void statusBuzzer(int times, int delayTime)

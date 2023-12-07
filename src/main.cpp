@@ -1,24 +1,44 @@
 #include <Arduino.h>
 #include <PubSubClient.h>
 
-#include <loadConfig.h>
-
 // Include Functionality according to the board
 #if !(defined(ESP32) || defined(ESP8266))
 #error "This code is intended to run on the ESP32 or ESP8266 platform!"
 #endif
 
 #ifdef ESP32
+int esp32 = 1;
+int esp8266 = 0;
+
 #include <WiFi.h>
 #include <WebServer.h>
 WebServer server(80);
+
+// can use both at same pins.
+#define STATUS_BUZZER 27
+#define BUILTIN_LED 2
 #endif
 
 #ifdef ESP8266
+int esp32 = 0;
+int esp8266 = 1;
+
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
 ESP8266WebServer server(80);
+
+#define STATUS_BUZZER D0
+#define BUILTIN_LED D4
 #endif
+
+#ifdef DEBUG
+int debug = 1;
+#else
+int debug = 0;
+#endif
+
+// Load config file
+#include <loadConfig.h>
 
 // MQTT Client
 WiFiClient espClient;
@@ -270,8 +290,12 @@ void setup()
   pinMode(STATUS_BUZZER, OUTPUT);
   pinMode(BUILTIN_LED, OUTPUT);
 
-  // Turn ON the built-in LED (In-Built LED works in Inverted Mode)
-  digitalWrite(BUILTIN_LED, LOW);
+  // Turn ON the built-in LED
+  if (esp32)
+    digitalWrite(BUILTIN_LED, HIGH);
+  else if (esp8266)
+    // (In-Built LED works in Inverted Mode)
+    digitalWrite(BUILTIN_LED, LOW);
 
   // Delay after power on to allow for serial monitor to be connected and to make sure beeps are heard clearly.
   delay(3000);
