@@ -3,6 +3,8 @@
 #include <ArduinoJson.h>
 #include <LittleFS.h>
 
+const size_t JSON_FILE_SIZE = 2048;
+
 using JsonDocumentType = ArduinoJson::V6213PB2::DynamicJsonDocument;
 
 void statusBuzzer(int times, int delayTime)
@@ -20,6 +22,7 @@ void printConfig(JsonDocumentType &configDoc)
 {
     if (debug)
     {
+        Serial.println("-----------------------");
         Serial.println("WIFI_SSID: \t" + String(configDoc["wifi"]["ssid"].as<String>()));
         Serial.println("WIFI_PASS: \t" + String(configDoc["wifi"]["password"].as<String>()));
         Serial.println("WIFI_HOSTNAME: \t" + String(configDoc["wifi"]["hostname"].as<String>()));
@@ -51,7 +54,7 @@ void checkLittleFS()
 File openConfigFile()
 {
     // Open the config file
-    File configFile = LittleFS.open("config.json", "r");
+    File configFile = LittleFS.open("/config.json", "r");
     while (!configFile)
     {
         Serial.println("Failed to open config file");
@@ -63,65 +66,8 @@ File openConfigFile()
     return configFile;
 }
 
-void closeConfigFile(File configFile)
+void initilizedPins(JsonDocumentType &configDoc)
 {
-    // Close the config file
-    configFile.close();
-    Serial.println("Closed config file");
-
-    // Unmount LittleFS
-    LittleFS.end();
-    Serial.println("Unmounted LittleFS");
-}
-
-JsonDocumentType loadConfig(JsonDocumentType &configDoc)
-{
-    // Mount LittleFS and open the config file
-    // File configFile = openConfigFile();
-
-    // Check if LittleFS is mounted
-    checkLittleFS();
-
-    // Open the config file
-    File configFile = LittleFS.open("/config.json", "r");
-    while (!configFile)
-    {
-        while (true)
-        {
-            Serial.println("Failed to open config file");
-
-            statusBuzzer(3, 100);
-
-            delay(2000);
-        }
-    }
-    Serial.println("Opened config file");
-
-    // Parse the JSON content
-    size_t size = configFile.size();
-    std::unique_ptr<char[]> buf(new char[size]);
-    configFile.readBytes(buf.get(), size);
-
-    DeserializationError error = deserializeJson(configDoc, buf.get());
-    while (error)
-    {
-        Serial.println("Failed to parse config file");
-        statusBuzzer(3, 100);
-        delay(2000);
-    }
-    Serial.println("Parsed config file");
-
-    // Close the config file and unmount LittleFS
-    // closeConfigFile(configFile);
-
-    // Close the config file
-    configFile.close();
-    Serial.println("Closed config file");
-
-    // Unmount LittleFS
-    LittleFS.end();
-    Serial.println("Unmounted LittleFS");
-
     // Loop through the devices array in the JSON document
     for (const auto &device : configDoc["devices"].as<JsonArray>())
     {
@@ -153,6 +99,32 @@ JsonDocumentType loadConfig(JsonDocumentType &configDoc)
             Serial.println("Invalid pin type");
         }
     }
-    printConfig(configDoc);
-    return configDoc;
+}
+
+bool loadConfig(char *buffer)
+{
+    // Mount LittleFS and open the config file
+    // File configFile = openConfigFile();
+
+    // Check if LittleFS is mounted
+    checkLittleFS();
+
+    // Open the config file
+    File configFile = openConfigFile();
+
+    size_t bytesRead = configFile.readBytes(buffer, JSON_FILE_SIZE);
+
+    if (bytesRead == 0)
+    {
+        Serial.println("Failed to read config file");
+        return false;
+    }
+    // Null-terminate the buffer to ensure it's a valid string
+    buffer[bytesRead] = '\0';
+
+    // Close the config file
+    configFile.close();
+    Serial.println("Closed config file");
+    
+    return true;
 }

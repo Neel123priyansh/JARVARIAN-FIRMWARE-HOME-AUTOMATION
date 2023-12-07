@@ -39,6 +39,7 @@ int debug = 0;
 
 // Load config file
 #include <loadConfig.h>
+DynamicJsonDocument configDoc(JSON_FILE_SIZE);
 
 // MQTT Client
 WiFiClient espClient;
@@ -89,18 +90,16 @@ void connectToWiFi(JsonDocumentType &configDoc)
   WiFi.config(ip, gateway_ip, subnet_ip, dns_ip);
 
   // Set hostname
-  // const char *hostname = configDoc["wifi"]["hostname"].as<const char *>();
-  // if (debug)
-  // {
-  //   Serial.println("-----------------------");
-  //   Serial.println("Setting hostname...");
-  //   Serial.println("Hostname: " + String(hostname));
-  // }
-  // WiFi.setHostname(hostname);
+  const char *hostname = configDoc["wifi"]["hostname"].as<const char *>();
+  if (debug)
+  {
+    Serial.println("-----------------------");
+    Serial.println("Setting hostname...");
+    Serial.println("Hostname: " + String(hostname));
+  }
+  WiFi.setHostname(hostname);
 
   // Connect to WiFi network
-  // const char *ssid = configDoc["wifi"]["ssid"].as<const char *>();
-  // const char *password = configDoc["wifi"]["password"].as<const char *>();
 
   String ssid = configDoc["wifi"]["ssid"].as<String>();
   String password = configDoc["wifi"]["password"].as<String>();
@@ -115,7 +114,7 @@ void connectToWiFi(JsonDocumentType &configDoc)
     Serial.println(password);
   }
 
-  // WiFi.begin(ssid, password);
+  WiFi.begin(ssid, password);
 
   // Wait for connection
   while (WiFi.status() != WL_CONNECTED)
@@ -284,7 +283,11 @@ void setup()
 {
   // Initialize Serial
   Serial.begin(115200);
-  Serial.println("Serial initialized");
+  if (debug)
+  {
+    Serial.println("-----------------------");
+    Serial.println("Serial initialized");
+  }
 
   // Initialize Buzzer and In-Built LED
   pinMode(STATUS_BUZZER, OUTPUT);
@@ -301,8 +304,54 @@ void setup()
   delay(3000);
 
   // Load config file
-  DynamicJsonDocument configDoc(2048);
-  configDoc = loadConfig(configDoc);
+  char jsonBuffer[JSON_FILE_SIZE];
+  bool configLoaded = loadConfig(jsonBuffer);
+
+  while (!configLoaded)
+  {
+    if (debug)
+    {
+      Serial.println("-----------------------");
+      Serial.println("Failed to load config file");
+    }
+    statusBuzzer(3, 100);
+    delay(2000);
+  }
+
+  // Successfully loaded the config file
+  if (debug)
+  {
+    Serial.println("-----------------------");
+    Serial.println("Config file loaded successfully:");
+  }
+
+  // Parse the JSON document if needed
+  DeserializationError error = deserializeJson(configDoc, jsonBuffer);
+
+  while (error)
+  {
+    if (debug)
+    {
+      Serial.println("-----------------------");
+      Serial.println("Failed to parse config file. ERROR: ");
+      Serial.println(error.c_str());
+    }
+    statusBuzzer(3, 100);
+    delay(2000);
+  }
+
+  if (debug)
+  {
+    Serial.println("-----------------------");
+    Serial.println("Parsed JSON successfully");
+  }
+
+  // Print the config file
+  if (debug)
+    printConfig(configDoc);
+
+  // Initialize pins
+  // initilizedPins(configDoc);
 
   // Connect to WiFi
   connectToWiFi(configDoc);
@@ -313,16 +362,20 @@ void setup()
   server.on("/", HTTP_POST, methodNotAllowed);
 
   //! Handle Config(/config) endpoint
-  server.on("/config", HTTP_GET, [&configDoc]()
-            { handleConfigGet(configDoc); });
-  server.on("/config", HTTP_POST, methodNotAllowed);
+  // server.on("/config", HTTP_GET, [&configDoc]()
+  //           { handleConfigGet(configDoc); });
+  // server.on("/config", HTTP_POST, methodNotAllowed);
 
   // Handle 404
   server.onNotFound(notFound);
 
   // Start server
   server.begin();
-  Serial.println("HTTP server started");
+  if (debug)
+  {
+    Serial.println("-----------------------");
+    Serial.println("HTTP server started");
+  }
 
   // Setup connection to MQTT Broker (Server)
   // mqttclient.setServer(String(configDoc["mqtt"]["host"]).c_str(), configDoc["mqtt"]["port"].as<int>());
