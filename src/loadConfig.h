@@ -31,6 +31,7 @@ void printConfig(JsonDocumentType &configDoc)
         Serial.println("WIFI_SUBNET: \t" + String(configDoc["wifi"]["subnet"].as<String>()));
         Serial.println("WIFI_DNS: \t" + String(configDoc["wifi"]["dns"].as<String>()));
 
+        Serial.println("MQTT_CLIENT_ID: \t" + String(configDoc["mqtt"]["clientID"].as<String>()));
         Serial.println("MQTT_SERVER: \t" + String(configDoc["mqtt"]["host"].as<String>()));
         Serial.println("MQTT_PORT: \t" + String(configDoc["mqtt"]["port"].as<String>()));
         Serial.println("MQTT_USERNAME: \t" + String(configDoc["mqtt"]["username"].as<String>()));
@@ -44,11 +45,19 @@ void checkLittleFS()
     // Mount LittleFS
     while (!LittleFS.begin())
     {
-        Serial.println("Failed to mount LittleFS");
+        if (debug)
+        {
+            Serial.println("-----------------------");
+            Serial.println("Failed to mount LittleFS");
+        }
         statusBuzzer(3, 100);
         delay(2000);
     }
-    Serial.println("Mounted LittleFS");
+    if (debug)
+    {
+        Serial.println("-----------------------");
+        Serial.println("Mounted LittleFS");
+    }
 }
 
 File openConfigFile()
@@ -57,11 +66,20 @@ File openConfigFile()
     File configFile = LittleFS.open("/config.json", "r");
     while (!configFile)
     {
-        Serial.println("Failed to open config file");
+        if (debug)
+        {
+            Serial.println("-----------------------");
+            Serial.println("Failed to open config file");
+        }
+
         statusBuzzer(3, 100);
         delay(2000);
     }
-    Serial.println("Opened config file");
+    if (debug)
+    {
+        Serial.println("-----------------------");
+        Serial.println("Opened config file");
+    }
 
     return configFile;
 }
@@ -69,43 +87,45 @@ File openConfigFile()
 void initilizedPins(JsonDocumentType &configDoc)
 {
     // Loop through the devices array in the JSON document
+    if (debug)
+        Serial.println("-----------------------");
     for (const auto &device : configDoc["devices"].as<JsonArray>())
     {
         const String name = device["name"];
         int pin = device["pin"].as<int>();
         const String type = device["type"];
 
-        // Initialize the pin
+        // Initialize the pin as OUTPUT
         if (type == "OUTPUT")
         {
-            if (pin != -1)
-            {
-                pinMode(pin, OUTPUT);
+            //! Check if pin is VALID
+            pinMode(pin, OUTPUT);
+            if (debug)
                 Serial.println("Initialized " + name + " on pin " + String(pin) + " as OUTPUT");
-            }
-            // Configure the pin of INPUT_PULLUP
-            else
-            {
-                while (true)
-                {
-                    Serial.println("Invalid pin" + pin);
-                    statusBuzzer(4, 100);
-                    delay(2000);
-                }
-            }
+        }
+        // Initialize the pin as INPUT
+        else if (type == "INPUT")
+        {
+            //! Check if pin is VALID
+            pinMode(pin, INPUT);
+            if (debug)
+                Serial.println("Initialized " + name + " on pin " + String(pin) + " as INPUT");
         }
         else
         {
-            Serial.println("Invalid pin type");
+            while (true)
+            {
+                if (debug)
+                    Serial.println("Invalid pin type" + type);
+                statusBuzzer(4, 100);
+                delay(2000);
+            }
         }
     }
 }
 
 bool loadConfig(char *buffer)
 {
-    // Mount LittleFS and open the config file
-    // File configFile = openConfigFile();
-
     // Check if LittleFS is mounted
     checkLittleFS();
 
@@ -124,7 +144,8 @@ bool loadConfig(char *buffer)
 
     // Close the config file
     configFile.close();
-    Serial.println("Closed config file");
-    
+    if (debug)
+        Serial.println("Closed config file");
+
     return true;
 }

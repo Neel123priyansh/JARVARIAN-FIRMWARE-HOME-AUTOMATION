@@ -55,16 +55,6 @@ void connectToWiFi(JsonDocumentType &configDoc)
   String subnet = configDoc["wifi"]["subnet"].as<String>();
   String dns = configDoc["wifi"]["dns"].as<String>();
 
-  // char static_ip[16];
-  // char gateway[16];
-  // char subnet[16];
-  // char dns[16];
-
-  // strcpy(static_ip, configDoc["wifi"]["ip"].as<char *>());
-  // strcpy(gateway, configDoc["wifi"]["gateway"].as<char *>());
-  // strcpy(subnet, configDoc["wifi"]["subnet"].as<char *>());
-  // strcpy(dns, configDoc["wifi"]["dns"].as<char *>());
-
   IPAddress ip;
   IPAddress gateway_ip;
   IPAddress subnet_ip;
@@ -100,7 +90,6 @@ void connectToWiFi(JsonDocumentType &configDoc)
   WiFi.setHostname(hostname);
 
   // Connect to WiFi network
-
   String ssid = configDoc["wifi"]["ssid"].as<String>();
   String password = configDoc["wifi"]["password"].as<String>();
 
@@ -117,35 +106,60 @@ void connectToWiFi(JsonDocumentType &configDoc)
   WiFi.begin(ssid, password);
 
   // Wait for connection
+  if (debug)
+    Serial.println("-----------------------");
   while (WiFi.status() != WL_CONNECTED)
   {
     statusBuzzer(2, 100);
-    Serial.println("Connecting to WiFi...");
+    if (debug)
+      Serial.println("Connecting to WiFi...");
     delay(2000); // 2s delay
   }
 
-  Serial.println("Connected to the WiFi network");
-  Serial.println(String(WiFi.getHostname()) + " @ " + WiFi.localIP().toString());
+  if (debug)
+  {
+    Serial.println("Connected to the WiFi network");
+    Serial.println(String(WiFi.getHostname()) + " @ " + WiFi.localIP().toString());
+  }
 }
 
-void connectToMQTT()
+void connectToMQTT(JsonDocumentType &configDoc)
 {
-  Serial.println("Connecting to MQTT Broker...");
-  // if (mqttclient.connect(String(configDoc["wifi"]["hostname"]).c_str(), String(configDoc["mqtt"]["username"]).c_str(), String(configDoc["mqtt"]["password"]).c_str()))
-  String clientID = "nodemcu-" + String(random(0xffff), HEX);
+  String clientID = configDoc["mqtt"]["clientID"].as<String>();
+  String username = configDoc["mqtt"]["username"].as<String>();
+  String password = configDoc["mqtt"]["password"].as<String>();
+  String topic = configDoc["mqtt"]["topic"].as<String>();
 
-  if (mqttclient.connect(clientID.c_str(), "mosquitto", "mosquitto"))
+  if (debug)
   {
-    Serial.println("Connected to MQTT Broker");
-    // mqttclient.subscribe(String(configDoc["mqtt"]["topic"]).c_str());
-    mqttclient.subscribe("home/2/bedroom");
+    Serial.println("-----------------------");
+    Serial.println("Connecting to MQTT Broker...");
+    Serial.print("Client ID: ");
+    Serial.println(clientID);
+    Serial.print("Username: ");
+    Serial.println(username);
+    Serial.print("Password: ");
+    Serial.println(password);
+  }
+
+  if (mqttclient.connect(clientID.c_str(), username.c_str(), password.c_str()))
+  {
+    if (debug)
+    {
+      Serial.println("Connected to MQTT Broker");
+      Serial.println("Subscribing to topic: " + topic);
+    }
+    mqttclient.subscribe(topic.c_str());
   }
   else
   {
-    Serial.println("MQTT connection failed");
-    Serial.print("Error code: ");
-    Serial.println(mqttclient.state());
-    delay(2000);
+    if (debug)
+    {
+      Serial.println("MQTT connection failed");
+      Serial.print("Error code: ");
+      Serial.println(mqttclient.state());
+    }
+    statusBuzzer(5, 100);
   }
 }
 
@@ -155,33 +169,19 @@ void handleRootGet()
   statusBuzzer(1, 100);
 }
 
-//! Remove this function later. This is just for testing.
-void printConfigDoc(JsonDocumentType &configDoc)
-{
-  String configString;
-  serializeJson(configDoc, configString);
-  Serial.println(configString);
-}
-
-void handleConfigGet(JsonDocumentType &configDoc)
-{
-  String configString;
-  serializeJson(configDoc, configString);
-  Serial.println(configString);
-  server.send(200, "application/json", configString);
-  statusBuzzer(1, 100);
-}
-
 void handleConfigGet()
 {
-  // Load config file
-  // File configFile = openConfigFile();
+  String configString;
+  serializeJson(configDoc, configString);
 
-  // Send the config file
-  // server.streamFile(configFile, "application/json");
+  if (debug)
+  {
+    Serial.println("-----------------------");
+    Serial.println("Sending config file");
+    Serial.println(configString);
+  }
 
-  // Close the file
-  // closeConfigFile(configFile);
+  server.send(200, "application/json", configString);
 
   // Buzzer status
   statusBuzzer(1, 100);
@@ -201,8 +201,8 @@ void notFound()
 
 void callback(char *topic, byte *payload, unsigned short int length)
 {
-  if (debug)
-    Serial.println("-----------------------");
+  String server = configDoc["mqtt"]["host"].as<String>();
+  String topicString = configDoc["mqtt"]["topic"].as<String>();
 
   // Convert payload to a string
   String message;
@@ -224,13 +224,14 @@ void callback(char *topic, byte *payload, unsigned short int length)
 
   if (message.equals("status"))
   {
-    mqttclient.publish("home/2/bedroom", "OK");
+    mqttclient.publish(topicString.c_str(), "OK");
     return;
   }
 
   // if debug is enabled, print the message
   if (debug)
   {
+    Serial.println("-----------------------");
     Serial.println("Message arrived in topic: " + String(topic));
     Serial.println("Message: " + String(message));
   }
@@ -241,7 +242,7 @@ void callback(char *topic, byte *payload, unsigned short int length)
   if (error)
   {
     Serial.println("Not a valid JSON message");
-    mqttclient.publish("home/2/bedroom", "Not a valid JSON message");
+    mqttclient.publish(topic, "Not a valid JSON message");
     return;
   }
 
@@ -253,30 +254,37 @@ void callback(char *topic, byte *payload, unsigned short int length)
     if (state.equals("ON"))
     {
       digitalWrite(pin, HIGH);
-      mqttclient.publish("home/2/bedroom", "OK");
+      mqttclient.publish(topic, "OK");
+      if (debug)
+      {
+        Serial.println("Changing pin state: ");
+        Serial.println("Pin: " + String(pin));
+        Serial.println("State: " + state);
+      }
     }
     else if (state.equals("OFF"))
     {
       digitalWrite(pin, LOW);
-      mqttclient.publish("home/2/bedroom", "OK");
+      mqttclient.publish(topic, "OK");
+      if (debug)
+      {
+        Serial.println("Changing pin state: ");
+        Serial.println("Pin: " + String(pin));
+        Serial.println("State: " + state);
+      }
     }
     else
     {
       Serial.println("Invalid state");
-      mqttclient.publish("home/2/bedroom", "Invalid state");
+      mqttclient.publish(topic, "Invalid state");
     }
-
-    if (debug)
-    {
-      Serial.println("Pin: " + String(pin));
-      Serial.println("State: " + state);
-    }
-
-    statusBuzzer(1, 100);
   }
-
-  if (debug)
-    Serial.println("-----------------------");
+  else
+  {
+    Serial.println("Not a valid JSON message");
+    mqttclient.publish(topic, "Not a valid JSON message");
+  }
+  statusBuzzer(1, 100);
 }
 
 void setup()
@@ -351,7 +359,7 @@ void setup()
     printConfig(configDoc);
 
   // Initialize pins
-  // initilizedPins(configDoc);
+  initilizedPins(configDoc);
 
   // Connect to WiFi
   connectToWiFi(configDoc);
@@ -361,10 +369,9 @@ void setup()
   server.on("/", HTTP_GET, handleRootGet);
   server.on("/", HTTP_POST, methodNotAllowed);
 
-  //! Handle Config(/config) endpoint
-  // server.on("/config", HTTP_GET, [&configDoc]()
-  //           { handleConfigGet(configDoc); });
-  // server.on("/config", HTTP_POST, methodNotAllowed);
+  // Handle Config(/config) endpoint
+  server.on("/config", HTTP_GET, handleConfigGet);
+  server.on("/config", HTTP_POST, methodNotAllowed);
 
   // Handle 404
   server.onNotFound(notFound);
@@ -378,31 +385,48 @@ void setup()
   }
 
   // Setup connection to MQTT Broker (Server)
-  // mqttclient.setServer(String(configDoc["mqtt"]["host"]).c_str(), configDoc["mqtt"]["port"].as<int>());
-  mqttclient.setServer("192.168.0.254", 1883);
+  String server = configDoc["mqtt"]["host"].as<String>();
+  String port = configDoc["mqtt"]["port"].as<String>();
+
+  if (debug)
+  {
+    Serial.println("-----------------------");
+    Serial.println("Initializing MQTT Client...");
+    Serial.print("Server: ");
+    Serial.println(server);
+    Serial.print("Port: ");
+    Serial.println(port);
+  }
+
+  mqttclient.setServer(server.c_str(), port.toInt());
   mqttclient.setCallback(callback);
+  connectToMQTT(configDoc);
 }
+
 void loop()
 {
   server.handleClient();
 
-  // if (WiFi.status() != WL_CONNECTED)
-  // {
-  //   Serial.println("WiFi connection lost.. Reconnecting..");
-  //   connectToWiFi(configDoc);
-  // }
-
-  if (!mqttclient.connected())
+  if (WiFi.status() != WL_CONNECTED)
   {
-    connectToMQTT();
+    if (debug)
+      Serial.println("WiFi connection lost.. Reconnecting..");
+    connectToWiFi(configDoc);
   }
-  mqttclient.loop();
 
-  // publish a message roughly every 5 seconds.
+  // publish a message roughly every 5 seconds if connected else reconnect
   unsigned long currentMillis = millis();
   if (currentMillis - previousMillis > 10000)
   {
     previousMillis = currentMillis;
-    mqttclient.publish("home/2/bedroom", "keep-alive");
+    if (mqttclient.connected())
+      mqttclient.publish(configDoc["mqtt"]["topic"].as<String>().c_str(), "keep-alive");
+    else
+    {
+      connectToMQTT(configDoc);
+      Serial.println("-----------------------");
+      Serial.println("Connection lost.. Reconnecting..");
+    }
   }
+  mqttclient.loop();
 }
