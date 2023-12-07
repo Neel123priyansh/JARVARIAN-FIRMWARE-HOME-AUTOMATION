@@ -4,8 +4,9 @@
 #include <LittleFS.h>
 
 #ifdef ESP32
-#define STATUS_BUZZER 2
-// #define BUILTIN_LED D3
+// can use both at same pins.
+#define STATUS_BUZZER 27
+#define BUILTIN_LED 2
 #endif
 
 #ifdef ESP8266
@@ -32,69 +33,6 @@ void statusBuzzer(int times, int delayTime)
     }
 }
 
-int mapPin(const String &pinString)
-{
-    // static const uint8_t D0   = 16;
-    // static const uint8_t D1   = 5;
-    // static const uint8_t D2   = 4;
-    // static const uint8_t D3   = 0;
-    // static const uint8_t D4   = 2;
-    // static const uint8_t D5   = 14;
-    // static const uint8_t D6   = 12;
-    // static const uint8_t D7   = 13;
-    // static const uint8_t D8   = 15;
-    // static const uint8_t D9   = 3;
-    // static const uint8_t D10  = 1;
-    if (pinString.equals("D0"))
-    {
-        return 16;
-    }
-    else if (pinString.equals("D1"))
-    {
-        return 5;
-    }
-    else if (pinString.equals("D2"))
-    {
-        return 4;
-    }
-    else if (pinString.equals("D3"))
-    {
-        return 0;
-    }
-    else if (pinString.equals("D4"))
-    {
-        return 2;
-    }
-    else if (pinString.equals("D5"))
-    {
-        return 14;
-    }
-    else if (pinString.equals("D6"))
-    {
-        return 12;
-    }
-    else if (pinString.equals("D7"))
-    {
-        return 13;
-    }
-    else if (pinString.equals("D8"))
-    {
-        return 15;
-    }
-    else if (pinString.equals("D9"))
-    {
-        return 3;
-    }
-    else if (pinString.equals("D10"))
-    {
-        return 1;
-    }
-    else
-    {
-        return -1;
-    }
-}
-
 void printConfig(JsonDocumentType &configDoc)
 {
     if (debug)
@@ -115,40 +53,27 @@ void printConfig(JsonDocumentType &configDoc)
     }
 }
 
-void mountLittleFS()
+void checkLittleFS()
 {
     // Mount LittleFS
     while (!LittleFS.begin())
     {
-        while (true)
-        {
-            Serial.println("Failed to mount LittleFS");
-
-            statusBuzzer(3, 100);
-
-            delay(2000);
-        }
+        Serial.println("Failed to mount LittleFS");
+        statusBuzzer(3, 100);
+        delay(2000);
     }
     Serial.println("Mounted LittleFS");
 }
 
 File openConfigFile()
 {
-    // Mount LittleFS
-    mountLittleFS();
-
     // Open the config file
     File configFile = LittleFS.open("config.json", "r");
     while (!configFile)
     {
-        while (true)
-        {
-            Serial.println("Failed to open config file");
-
-            statusBuzzer(3, 100);
-
-            delay(2000);
-        }
+        Serial.println("Failed to open config file");
+        statusBuzzer(3, 100);
+        delay(2000);
     }
     Serial.println("Opened config file");
 
@@ -171,22 +96,11 @@ JsonDocumentType loadConfig(JsonDocumentType &configDoc)
     // Mount LittleFS and open the config file
     // File configFile = openConfigFile();
 
-    // Mount LittleFS
-    while (!LittleFS.begin())
-    {
-        while (true)
-        {
-            Serial.println("Failed to mount LittleFS");
-
-            statusBuzzer(3, 100);
-
-            delay(2000);
-        }
-    }
-    Serial.println("Mounted LittleFS");
+    // Check if LittleFS is mounted
+    checkLittleFS();
 
     // Open the config file
-    File configFile = LittleFS.open("config.json", "r");
+    File configFile = LittleFS.open("/config.json", "r");
     while (!configFile)
     {
         while (true)
@@ -206,16 +120,11 @@ JsonDocumentType loadConfig(JsonDocumentType &configDoc)
     configFile.readBytes(buf.get(), size);
 
     DeserializationError error = deserializeJson(configDoc, buf.get());
-    if (error)
+    while (error)
     {
-        while (true)
-        {
-            Serial.println("Failed to parse config file");
-
-            statusBuzzer(3, 100);
-
-            delay(2000);
-        }
+        Serial.println("Failed to parse config file");
+        statusBuzzer(3, 100);
+        delay(2000);
     }
     Serial.println("Parsed config file");
 
@@ -234,18 +143,18 @@ JsonDocumentType loadConfig(JsonDocumentType &configDoc)
     for (const auto &device : configDoc["devices"].as<JsonArray>())
     {
         const String name = device["name"];
-        const String pin = device["pin"];
+        int pin = device["pin"].as<int>();
         const String type = device["type"];
 
         // Initialize the pin
         if (type == "OUTPUT")
         {
-            int pinNumber = mapPin(pin);
-            if (pinNumber != -1)
+            if (pin != -1)
             {
-                pinMode(pinNumber, OUTPUT);
-                Serial.println("Initialized " + name + " on pin " + pin + "(GPIO " + pinNumber + ") " + "as " + type);
+                pinMode(pin, OUTPUT);
+                Serial.println("Initialized " + name + " on pin " + String(pin) + " as OUTPUT");
             }
+            // Configure the pin of INPUT_PULLUP
             else
             {
                 while (true)

@@ -23,16 +23,27 @@ ESP8266WebServer server(80);
 // MQTT Client
 WiFiClient espClient;
 PubSubClient mqttclient(espClient);
-// Setting as first message is sent immediately after connection
+// Setting `0` as first `keep-alive` message is sent immediately after connection.
 unsigned long previousMillis = 0;
 
 void connectToWiFi(JsonDocumentType &configDoc)
 {
-  // Connect to WiFi network
+  // Set static IP
   String static_ip = configDoc["wifi"]["ip"].as<String>();
   String gateway = configDoc["wifi"]["gateway"].as<String>();
   String subnet = configDoc["wifi"]["subnet"].as<String>();
   String dns = configDoc["wifi"]["dns"].as<String>();
+
+  // char static_ip[16];
+  // char gateway[16];
+  // char subnet[16];
+  // char dns[16];
+
+  // strcpy(static_ip, configDoc["wifi"]["ip"].as<char *>());
+  // strcpy(gateway, configDoc["wifi"]["gateway"].as<char *>());
+  // strcpy(subnet, configDoc["wifi"]["subnet"].as<char *>());
+  // strcpy(dns, configDoc["wifi"]["dns"].as<char *>());
+
   IPAddress ip;
   IPAddress gateway_ip;
   IPAddress subnet_ip;
@@ -42,14 +53,49 @@ void connectToWiFi(JsonDocumentType &configDoc)
   subnet_ip.fromString(subnet);
   dns_ip.fromString(dns);
 
+  if (debug)
+  {
+    Serial.println("-----------------------");
+    Serial.println("Setting static IP...");
+    Serial.print("IP: ");
+    Serial.println(static_ip);
+    Serial.print("Gateway: ");
+    Serial.println(gateway);
+    Serial.print("Subnet: ");
+    Serial.println(subnet);
+    Serial.print("DNS: ");
+    Serial.println(dns);
+  }
   WiFi.config(ip, gateway_ip, subnet_ip, dns_ip);
-  WiFi.setHostname(configDoc["wifi"]["hostname"]);
+
+  // Set hostname
+  // const char *hostname = configDoc["wifi"]["hostname"].as<const char *>();
+  // if (debug)
+  // {
+  //   Serial.println("-----------------------");
+  //   Serial.println("Setting hostname...");
+  //   Serial.println("Hostname: " + String(hostname));
+  // }
+  // WiFi.setHostname(hostname);
 
   // Connect to WiFi network
-  const char *ssid = configDoc["wifi"]["ssid"].as<const char *>();
-  const char *password = configDoc["wifi"]["password"].as<const char *>();
+  // const char *ssid = configDoc["wifi"]["ssid"].as<const char *>();
+  // const char *password = configDoc["wifi"]["password"].as<const char *>();
 
-  WiFi.begin(ssid, password);
+  String ssid = configDoc["wifi"]["ssid"].as<String>();
+  String password = configDoc["wifi"]["password"].as<String>();
+
+  if (debug)
+  {
+    Serial.println("-----------------------");
+    Serial.println("Setting up WiFi Credentials...");
+    Serial.print("SSID: ");
+    Serial.println(ssid);
+    Serial.print("Password: ");
+    Serial.println(password);
+  }
+
+  // WiFi.begin(ssid, password);
 
   // Wait for connection
   while (WiFi.status() != WL_CONNECTED)
@@ -107,9 +153,8 @@ void handleConfigGet(JsonDocumentType &configDoc)
   statusBuzzer(1, 100);
 }
 
-
-// void handleConfigGet()
-// {
+void handleConfigGet()
+{
   // Load config file
   // File configFile = openConfigFile();
 
@@ -120,8 +165,8 @@ void handleConfigGet(JsonDocumentType &configDoc)
   // closeConfigFile(configFile);
 
   // Buzzer status
-  // statusBuzzer(1, 100);
-// }
+  statusBuzzer(1, 100);
+}
 
 void methodNotAllowed()
 {
@@ -183,17 +228,17 @@ void callback(char *topic, byte *payload, unsigned short int length)
 
   if (doc.containsKey("pin") && doc.containsKey("state"))
   {
-    const String pin = doc["pin"];
+    int pin = doc["pin"].as<int>();
     const String state = doc["state"];
 
     if (state.equals("ON"))
     {
-      digitalWrite(mapPin(pin), HIGH);
+      digitalWrite(pin, HIGH);
       mqttclient.publish("home/2/bedroom", "OK");
     }
     else if (state.equals("OFF"))
     {
-      digitalWrite(mapPin(pin), LOW);
+      digitalWrite(pin, LOW);
       mqttclient.publish("home/2/bedroom", "OK");
     }
     else
@@ -204,7 +249,7 @@ void callback(char *topic, byte *payload, unsigned short int length)
 
     if (debug)
     {
-      Serial.println("Pin: " + pin);
+      Serial.println("Pin: " + String(pin));
       Serial.println("State: " + state);
     }
 
