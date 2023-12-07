@@ -7,8 +7,8 @@
 #endif
 
 #ifdef ESP32
-int esp32 = 1;
-int esp8266 = 0;
+int is_esp32 = 1;
+int is_esp8266 = 0;
 
 #include <WiFi.h>
 #include <WebServer.h>
@@ -20,8 +20,8 @@ WebServer server(80);
 #endif
 
 #ifdef ESP8266
-int esp32 = 0;
-int esp8266 = 1;
+int is_esp32 = 0;
+int is_esp8266 = 1;
 
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
@@ -302,9 +302,9 @@ void setup()
   pinMode(BUILTIN_LED, OUTPUT);
 
   // Turn ON the built-in LED
-  if (esp32)
+  if (is_esp32)
     digitalWrite(BUILTIN_LED, HIGH);
-  else if (esp8266)
+  else if (is_esp8266)
     // (In-Built LED works in Inverted Mode)
     digitalWrite(BUILTIN_LED, LOW);
 
