@@ -7,11 +7,12 @@
 #endif
 
 #ifdef ESP32
-int esp32 = 1;
-int esp8266 = 0;
+int is_esp32 = 1;
+int is_esp8266 = 0;
 
 #include <WiFi.h>
 #include <WebServer.h>
+
 WebServer server(80);
 
 // can use both at same pins.
@@ -20,8 +21,8 @@ WebServer server(80);
 #endif
 
 #ifdef ESP8266
-int esp32 = 0;
-int esp8266 = 1;
+int is_esp32 = 0;
+int is_esp8266 = 1;
 
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
@@ -201,8 +202,6 @@ void notFound()
 
 void callback(char *topic, byte *payload, unsigned short int length)
 {
-  String server = configDoc["mqtt"]["host"].as<String>();
-  String topicString = configDoc["mqtt"]["topic"].as<String>();
 
   // Convert payload to a string
   String message;
@@ -213,8 +212,6 @@ void callback(char *topic, byte *payload, unsigned short int length)
 
   if (message.equals("keep-alive"))
     return; // Skip processing for keep-alive messages
-  if (message.equals("status"))
-    return; // Skip processing for keep-alive messages
   if (message.equals("OK"))
     return; // Skip processing for keep-alive messages
   if (message.equals("Invalid state"))
@@ -224,7 +221,7 @@ void callback(char *topic, byte *payload, unsigned short int length)
 
   if (message.equals("status"))
   {
-    mqttclient.publish(topicString.c_str(), "OK");
+    mqttclient.publish(String(topic).c_str(), "OK");
     return;
   }
 
@@ -242,7 +239,7 @@ void callback(char *topic, byte *payload, unsigned short int length)
   if (error)
   {
     Serial.println("Not a valid JSON message");
-    mqttclient.publish(topic, "Not a valid JSON message");
+    mqttclient.publish(String(topic).c_str(), "Not a valid JSON message");
     return;
   }
 
@@ -254,7 +251,7 @@ void callback(char *topic, byte *payload, unsigned short int length)
     if (state.equals("ON"))
     {
       digitalWrite(pin, HIGH);
-      mqttclient.publish(topic, "OK");
+      mqttclient.publish(String(topic).c_str(), "OK");
       if (debug)
       {
         Serial.println("Changing pin state: ");
@@ -265,7 +262,7 @@ void callback(char *topic, byte *payload, unsigned short int length)
     else if (state.equals("OFF"))
     {
       digitalWrite(pin, LOW);
-      mqttclient.publish(topic, "OK");
+      mqttclient.publish(String(topic).c_str(), "OK");
       if (debug)
       {
         Serial.println("Changing pin state: ");
@@ -276,13 +273,13 @@ void callback(char *topic, byte *payload, unsigned short int length)
     else
     {
       Serial.println("Invalid state");
-      mqttclient.publish(topic, "Invalid state");
+      mqttclient.publish(String(topic).c_str(), "Invalid state");
     }
   }
   else
   {
     Serial.println("Not a valid JSON message");
-    mqttclient.publish(topic, "Not a valid JSON message");
+    mqttclient.publish(String(topic).c_str(), "Not a valid JSON message");
   }
   statusBuzzer(1, 100);
 }
@@ -302,9 +299,9 @@ void setup()
   pinMode(BUILTIN_LED, OUTPUT);
 
   // Turn ON the built-in LED
-  if (esp32)
+  if (is_esp32)
     digitalWrite(BUILTIN_LED, HIGH);
-  else if (esp8266)
+  else if (is_esp8266)
     // (In-Built LED works in Inverted Mode)
     digitalWrite(BUILTIN_LED, LOW);
 
