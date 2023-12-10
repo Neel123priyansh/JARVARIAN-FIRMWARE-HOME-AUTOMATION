@@ -25,3 +25,6 @@
   Client Message: `OK`
 * `Invalid state`, if server sends invalid `state` in message.
 * `Not a valid JSON message`, if server sends invalid JSON message.
+
+### WiFi
+* WiFi reconnects, if disconnected.
