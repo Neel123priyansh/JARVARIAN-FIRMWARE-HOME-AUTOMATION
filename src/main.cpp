@@ -12,6 +12,7 @@ int is_esp8266 = 0;
 
 #include <WiFi.h>
 #include <WebServer.h>
+
 WebServer server(80);
 
 // can use both at same pins.
@@ -199,34 +200,54 @@ void notFound()
   statusBuzzer(1, 100);
 }
 
+void publish_alive_JsonData(JsonDocumentType &configDoc)
+{
+  String configString;
+  serializeJson(configDoc["message"], configString);
+  mqttclient.publish(configDoc["mqtt"]["topic"].as<String>().c_str(), configString.c_str());
+}
+
+void publish_change_state_JsonData(JsonDocumentType &configDoc)
+{
+  String configString;
+  serializeJson(configDoc["change_state"], configString);
+  mqttclient.publish(configDoc["mqtt"]["topic"].as<String>().c_str(), configString.c_str());
+}
+
+void publish_current_state_JsonData(JsonDocumentType &configDoc)
+{
+  String configString;
+  serializeJson(configDoc["current_state"], configString);
+  mqttclient.publish(configDoc["mqtt"]["topic"].as<String>().c_str(), configString.c_str());
+}
+
+void publish_physical_state_chage_JsonData(JsonDocumentType &configDoc)
+{
+  String configString;
+  serializeJson(configDoc["physical_state_chage"], configString);
+  mqttclient.publish(configDoc["mqtt"]["topic"].as<String>().c_str(), configString.c_str());
+}
+
 void callback(char *topic, byte *payload, unsigned short int length)
 {
-  String server = configDoc["mqtt"]["host"].as<String>();
-  String topicString = configDoc["mqtt"]["topic"].as<String>();
 
   // Convert payload to a string
   String message;
+  JsonObject messageObj = configDoc["message"];
+
   for (unsigned short int i = 0; i < length; i++)
   {
     message += (char)payload[i];
-  }
 
-  if (message.equals("keep-alive"))
-    return; // Skip processing for keep-alive messages
-  if (message.equals("status"))
-    return; // Skip processing for keep-alive messages
+  }
+  if (message.equals(String(messageObj["messageType"])))
+    return;
   if (message.equals("OK"))
     return; // Skip processing for keep-alive messages
   if (message.equals("Invalid state"))
     return; // Skip processing for ERROR messages
   if (message.equals("Not a valid JSON message"))
     return; // Skip processing for ERROR messages
-
-  if (message.equals("status"))
-  {
-    mqttclient.publish(topicString.c_str(), "OK");
-    return;
-  }
 
   // if debug is enabled, print the message
   if (debug)
@@ -237,54 +258,34 @@ void callback(char *topic, byte *payload, unsigned short int length)
   }
 
   // Handle the message if it's a JSON
-  DynamicJsonDocument doc(64);
+  DynamicJsonDocument doc(256);
   DeserializationError error = deserializeJson(doc, message);
   if (error)
   {
     Serial.println("Not a valid JSON message");
-    mqttclient.publish(topic, "Not a valid JSON message");
+    mqttclient.publish(String(topic).c_str(), "Not a valid JSON message");
     return;
   }
 
-  if (doc.containsKey("pin") && doc.containsKey("state"))
-  {
-    int pin = doc["pin"].as<int>();
-    const String state = doc["state"];
+  JsonObject stateObj = doc["state"];
 
-    if (state.equals("ON"))
+  // Access the fields within the "state" object
+  // int pin = stateObj["pin"].as<int>();
+  const String state = stateObj["action"];
+
+
+
+    if (state.equals("turn_off"))
     {
-      digitalWrite(pin, HIGH);
-      mqttclient.publish(topic, "OK");
-      if (debug)
-      {
-        Serial.println("Changing pin state: ");
-        Serial.println("Pin: " + String(pin));
-        Serial.println("State: " + state);
-      }
+      digitalWrite(LED_BUILTIN, HIGH);
+      publish_change_state_JsonData(configDoc);
     }
-    else if (state.equals("OFF"))
+    else if (state.equals("turn_on"))
     {
-      digitalWrite(pin, LOW);
-      mqttclient.publish(topic, "OK");
-      if (debug)
-      {
-        Serial.println("Changing pin state: ");
-        Serial.println("Pin: " + String(pin));
-        Serial.println("State: " + state);
-      }
+      digitalWrite(LED_BUILTIN, LOW);
+      publish_change_state_JsonData(configDoc);
     }
-    else
-    {
-      Serial.println("Invalid state");
-      mqttclient.publish(topic, "Invalid state");
-    }
-  }
-  else
-  {
-    Serial.println("Not a valid JSON message");
-    mqttclient.publish(topic, "Not a valid JSON message");
-  }
-  statusBuzzer(1, 100);
+   
 }
 
 void setup()
@@ -420,7 +421,7 @@ void loop()
   {
     previousMillis = currentMillis;
     if (mqttclient.connected())
-      mqttclient.publish(configDoc["mqtt"]["topic"].as<String>().c_str(), "keep-alive");
+      publish_alive_JsonData(configDoc);
     else
     {
       Serial.println("-----------------------");
