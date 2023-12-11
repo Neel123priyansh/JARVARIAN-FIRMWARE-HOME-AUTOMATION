@@ -104,13 +104,13 @@ void initilizedPins(JsonDocumentType &configDoc)
                 Serial.println("Initialized " + name + " on pin " + String(pin) + " as OUTPUT");
         }
         // Initialize the pin as INPUT
-        else if (type == "INPUT")
-        {
-            //! Check if pin is VALID
-            pinMode(pin, INPUT);
-            if (debug)
-                Serial.println("Initialized " + name + " on pin " + String(pin) + " as INPUT");
-        }
+        // else if (type == "INPUT")
+        // {
+        //     //! Check if pin is VALID
+        //     pinMode(pin, INPUT_PULLUP);
+        //     if (debug)
+        //         Serial.println("Initialized " + name + " on pin " + String(pin) + " as INPUT");
+        // }
         else
         {
             while (true)

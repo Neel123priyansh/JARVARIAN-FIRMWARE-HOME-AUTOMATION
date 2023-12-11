@@ -126,6 +126,7 @@
         }
       }
       ```
+
   - If `state` is changed using physical buttons: (Not Implemented Yet)
 
     - From device to server:

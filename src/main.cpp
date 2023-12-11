@@ -47,8 +47,8 @@ WiFiClient espClient;
 PubSubClient mqttclient(espClient);
 
 // Setting `0` as first `keep-alive` message is sent immediately after connection.
-unsigned long keep_alive_counter = 1;
 unsigned long previousMillis = 0;
+unsigned long keep_alive_counter = 1;
 
 void connectToWiFi()
 {
@@ -213,6 +213,8 @@ void publish_keep_alive_message()
 
   String docString;
   serializeJson(doc, docString);
+  if (debug)
+    Serial.println(docString);
   mqttclient.publish(configDoc["mqtt"]["topic"].as<String>().c_str(), docString.c_str());
 }
 
@@ -226,7 +228,8 @@ void publish_current_state_message(int pinNumber, String deviceName)
 
   String docString;
   serializeJson(doc, docString);
-  Serial.println(docString);
+  if (debug)
+    Serial.println(docString);
   mqttclient.publish(configDoc["mqtt"]["topic"].as<String>().c_str(), docString.c_str());
 }
 
@@ -239,6 +242,8 @@ void publish_error_message(String message)
 
   String docString;
   serializeJson(doc, docString);
+  if (debug)
+    Serial.println(docString);
   mqttclient.publish(configDoc["mqtt"]["topic"].as<String>().c_str(), docString.c_str());
 }
 
