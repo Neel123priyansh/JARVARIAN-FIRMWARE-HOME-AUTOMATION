@@ -10,7 +10,6 @@
   },
 
   "mqtt": {
-    "clientID": "",
     "host": "",
     "port": "",
     "username": "",

@@ -128,7 +128,7 @@ void connectToWiFi()
 
 void connectToMQTT()
 {
-  String clientID = configDoc["mqtt"]["clientID"].as<String>();
+  String clientID = configDoc["wifi"]["hostname"].as<String>();
   String username = configDoc["mqtt"]["username"].as<String>();
   String password = configDoc["mqtt"]["password"].as<String>();
   String topic = configDoc["mqtt"]["topic"].as<String>();
