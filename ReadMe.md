@@ -8,3 +8,6 @@
   2. Failed to open `config.json` OR `config.json` not found
   3. Failed to parse `config.json`
 * `4 Beeps` -> Invalid pin found in `config.json`
+
+### See Team Contributions here:
+https://github.com/Jarvis-AI-project/JARVARIAN-FIRMWARE-HOME-AUTOMATION/graphs/contributors
