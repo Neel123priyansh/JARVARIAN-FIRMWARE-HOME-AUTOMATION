@@ -14,8 +14,19 @@ current_state_message = {
     'origin': 'check_mqtt.py',
     'messageType': 'current_state',
     'message': {
-        'device_id': 'BLUE_LED'
+        'device_id': 'YELLOW_LED'
     }
 }
 
 publish.single(topic, json.dumps(current_state_message), hostname=mqtt_host, auth={'username':username, 'password':password})
+
+# change_state_message = {
+#     'origin': 'check_mqtt.py',
+#     'messageType': 'change_state',
+#     'message': {
+#         'device_id': 'BLUE_LED',
+#         'state': 'ON'
+#     }
+# }
+
+# publish.single(topic, json.dumps(change_state_message), hostname=mqtt_host, auth={'username':username, 'password':password})

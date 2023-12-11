@@ -17,5 +17,11 @@
     "password": "",
     "topic": ""
   },
-  "devices": []
+  "devices": [
+    {
+      "name": "",
+      "type": "", # `INPUT` or `OUTPUT`
+      "pin": "" # See ReadMe.md
+    }
+  ]
 }
