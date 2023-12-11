@@ -28,8 +28,8 @@ int is_esp8266 = 1;
 #include <ESP8266WebServer.h>
 ESP8266WebServer server(80);
 
-#define STATUS_BUZZER D0
-#define BUILTIN_LED D4
+#define STATUS_BUZZER 16
+#define BUILTIN_LED 2
 #endif
 
 #ifdef DEBUG
@@ -45,10 +45,12 @@ DynamicJsonDocument configDoc(JSON_FILE_SIZE);
 // MQTT Client
 WiFiClient espClient;
 PubSubClient mqttclient(espClient);
+
 // Setting `0` as first `keep-alive` message is sent immediately after connection.
+unsigned long keep_alive_counter = 1;
 unsigned long previousMillis = 0;
 
-void connectToWiFi(JsonDocumentType &configDoc)
+void connectToWiFi()
 {
   // Set static IP
   String static_ip = configDoc["wifi"]["ip"].as<String>();
@@ -124,7 +126,7 @@ void connectToWiFi(JsonDocumentType &configDoc)
   }
 }
 
-void connectToMQTT(JsonDocumentType &configDoc)
+void connectToMQTT()
 {
   String clientID = configDoc["mqtt"]["clientID"].as<String>();
   String username = configDoc["mqtt"]["username"].as<String>();
@@ -145,12 +147,12 @@ void connectToMQTT(JsonDocumentType &configDoc)
 
   if (mqttclient.connect(clientID.c_str(), username.c_str(), password.c_str()))
   {
+    mqttclient.subscribe(topic.c_str());
     if (debug)
     {
       Serial.println("Connected to MQTT Broker");
-      Serial.println("Subscribing to topic: " + topic);
+      Serial.println("Subscribed to topic: " + topic);
     }
-    mqttclient.subscribe(topic.c_str());
   }
   else
   {
@@ -200,54 +202,52 @@ void notFound()
   statusBuzzer(1, 100);
 }
 
-void publish_alive_JsonData(JsonDocumentType &configDoc)
+void publish_keep_alive_message()
 {
-  String configString;
-  serializeJson(configDoc["message"], configString);
-  mqttclient.publish(configDoc["mqtt"]["topic"].as<String>().c_str(), configString.c_str());
+  StaticJsonDocument<256> doc;
+  doc["origin"] = configDoc["mqtt"]["clientID"].as<String>();
+  doc["messageType"] = "keep_alive";
+  doc["message"]["keep_alive_counter"] = keep_alive_counter;
+  doc["message"]["uptime"] = millis() / 1000; // uptime in seconds
+  keep_alive_counter++;
+
+  String docString;
+  serializeJson(doc, docString);
+  mqttclient.publish(configDoc["mqtt"]["topic"].as<String>().c_str(), docString.c_str());
 }
 
-void publish_change_state_JsonData(JsonDocumentType &configDoc)
+void publish_current_state_message(int pinNumber, String deviceName)
 {
-  String configString;
-  serializeJson(configDoc["change_state"], configString);
-  mqttclient.publish(configDoc["mqtt"]["topic"].as<String>().c_str(), configString.c_str());
+  StaticJsonDocument<256> doc;
+  doc["origin"] = configDoc["mqtt"]["clientID"].as<String>();
+  doc["messageType"] = "current_state";
+  doc["message"]["device_id"] = deviceName;
+  doc["message"]["state"] = digitalRead(pinNumber) ? "ON" : "OFF";
+
+  String docString;
+  serializeJson(doc, docString);
+  Serial.println(docString);
+  mqttclient.publish(configDoc["mqtt"]["topic"].as<String>().c_str(), docString.c_str());
 }
 
-void publish_current_state_JsonData(JsonDocumentType &configDoc)
+void publish_error_message(String message)
 {
-  String configString;
-  serializeJson(configDoc["current_state"], configString);
-  mqttclient.publish(configDoc["mqtt"]["topic"].as<String>().c_str(), configString.c_str());
-}
+  StaticJsonDocument<256> doc;
+  doc["origin"] = configDoc["mqtt"]["clientID"].as<String>();
+  doc["messageType"] = "error";
+  doc["message"]["message"] = message;
 
-void publish_physical_state_chage_JsonData(JsonDocumentType &configDoc)
-{
-  String configString;
-  serializeJson(configDoc["physical_state_chage"], configString);
-  mqttclient.publish(configDoc["mqtt"]["topic"].as<String>().c_str(), configString.c_str());
+  String docString;
+  serializeJson(doc, docString);
+  mqttclient.publish(configDoc["mqtt"]["topic"].as<String>().c_str(), docString.c_str());
 }
 
 void callback(char *topic, byte *payload, unsigned short int length)
 {
-
-  // Convert payload to a string
+  // Convert payload to a JSON Object
   String message;
-  JsonObject messageObj = configDoc["message"];
-
-  for (unsigned short int i = 0; i < length; i++)
-  {
+  for (unsigned int i = 0; i < length; i++)
     message += (char)payload[i];
-
-  }
-  if (message.equals(String(messageObj["messageType"])))
-    return;
-  if (message.equals("OK"))
-    return; // Skip processing for keep-alive messages
-  if (message.equals("Invalid state"))
-    return; // Skip processing for ERROR messages
-  if (message.equals("Not a valid JSON message"))
-    return; // Skip processing for ERROR messages
 
   // if debug is enabled, print the message
   if (debug)
@@ -257,35 +257,104 @@ void callback(char *topic, byte *payload, unsigned short int length)
     Serial.println("Message: " + String(message));
   }
 
-  // Handle the message if it's a JSON
-  DynamicJsonDocument doc(256);
-  DeserializationError error = deserializeJson(doc, message);
+  // Parse message to JSON
+  StaticJsonDocument<256> messageDoc;
+  DeserializationError error = deserializeJson(messageDoc, message);
   if (error)
   {
-    Serial.println("Not a valid JSON message");
-    mqttclient.publish(String(topic).c_str(), "Not a valid JSON message");
+    if (debug)
+      Serial.println("Not a valid JSON message");
+    publish_error_message("Not a valid JSON message");
     return;
   }
 
-  JsonObject stateObj = doc["state"];
+  // Skip messages originating from this device
+  if (messageDoc["origin"].as<String>().equals(configDoc["mqtt"]["clientID"].as<String>()))
+    return;
 
-  // Access the fields within the "state" object
-  // int pin = stateObj["pin"].as<int>();
-  const String state = stateObj["action"];
+  // Handle change_state messages
+  if (messageDoc["messageType"].as<String>().equals("change_state"))
+  {
+    if (debug)
+      Serial.println("Message type: change_state");
 
+    String deviceId = messageDoc["message"]["device_id"].as<String>();
+    String state = messageDoc["message"]["state"].as<String>();
 
-
-    if (state.equals("turn_off"))
+    // Loop through the devices array in the JSON document
+    for (const auto &device : configDoc["devices"].as<JsonArray>())
     {
-      digitalWrite(LED_BUILTIN, HIGH);
-      publish_change_state_JsonData(configDoc);
+      String name = device["name"];
+      int pin = device["pin"].as<int>();
+      String type = device["type"];
+
+      if (deviceId.equals(name))
+      {
+        if (debug)
+        {
+          Serial.println("Device found in config file");
+          Serial.println("Device name: " + name);
+          Serial.println("Device pin: " + String(pin));
+          Serial.println("Device type: " + type);
+        }
+
+        if (state.equals("ON"))
+        {
+          digitalWrite(pin, HIGH);
+          publish_current_state_message(pin, name);
+          return;
+        }
+        else if (state.equals("OFF"))
+        {
+          digitalWrite(pin, LOW);
+          publish_current_state_message(pin, name);
+          return;
+        }
+        else
+        {
+          if (debug)
+            Serial.println("Invalid state" + state);
+          publish_error_message("Invalid state" + state);
+          return;
+        }
+      }
     }
-    else if (state.equals("turn_on"))
+    Serial.println("Device (" + deviceId + ") not found in config file");
+    return;
+  }
+
+  // Handle current_state messages
+  if (messageDoc["messageType"].as<String>().equals("current_state"))
+  {
+    if (debug)
+      Serial.println("Message type: current_state");
+
+    String deviceId = messageDoc["message"]["device_id"].as<String>();
+
+    // Loop through the devices array in the JSON document
+    for (const auto &device : configDoc["devices"].as<JsonArray>())
     {
-      digitalWrite(LED_BUILTIN, LOW);
-      publish_change_state_JsonData(configDoc);
+      String name = device["name"];
+      int pin = device["pin"].as<int>();
+      String type = device["type"];
+
+      if (deviceId.equals(name))
+      {
+        if (debug)
+        {
+          Serial.println("Device found in config file");
+          Serial.println("Device name: " + name);
+          Serial.println("Device pin: " + String(pin));
+          Serial.println("Device type: " + type);
+        }
+
+        publish_current_state_message(pin, name);
+        return;
+      }
     }
-   
+    Serial.println("Device (" + deviceId + ") not found in config file");
+    return;
+  }
 }
 
 void setup()
@@ -363,7 +432,7 @@ void setup()
   initilizedPins(configDoc);
 
   // Connect to WiFi
-  connectToWiFi(configDoc);
+  connectToWiFi();
 
   // Define HTTP endpoint
   // Handle Root(/) endpoint
@@ -401,7 +470,7 @@ void setup()
 
   mqttclient.setServer(server.c_str(), port.toInt());
   mqttclient.setCallback(callback);
-  connectToMQTT(configDoc);
+  connectToMQTT();
 }
 
 void loop()
@@ -412,7 +481,7 @@ void loop()
   {
     if (debug)
       Serial.println("WiFi connection lost.. Reconnecting..");
-    connectToWiFi(configDoc);
+    connectToWiFi();
   }
 
   // publish a message roughly every 5 seconds if connected else reconnect
@@ -421,12 +490,12 @@ void loop()
   {
     previousMillis = currentMillis;
     if (mqttclient.connected())
-      publish_alive_JsonData(configDoc);
+      publish_keep_alive_message();
     else
     {
       Serial.println("-----------------------");
-      Serial.println("Connection lost.. Reconnecting..");
-      connectToMQTT(configDoc);
+      Serial.println("MQTT Connection lost.. Reconnecting..");
+      connectToMQTT();
     }
   }
   mqttclient.loop();

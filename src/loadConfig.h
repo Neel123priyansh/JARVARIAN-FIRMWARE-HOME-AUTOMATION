@@ -91,9 +91,9 @@ void initilizedPins(JsonDocumentType &configDoc)
         Serial.println("-----------------------");
     for (const auto &device : configDoc["devices"].as<JsonArray>())
     {
-        const String name = device["name"];
+        String name = device["name"];
         int pin = device["pin"].as<int>();
-        const String type = device["type"];
+        String type = device["type"];
 
         // Initialize the pin as OUTPUT
         if (type == "OUTPUT")
