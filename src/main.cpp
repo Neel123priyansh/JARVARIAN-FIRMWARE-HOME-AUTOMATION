@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <PubSubClient.h>
+#include <ArduinoOTA.h>
 
 // Include Functionality according to the board
 #if !(defined(ESP32) || defined(ESP8266))
@@ -12,6 +13,7 @@ int is_esp8266 = 0;
 
 #include <WiFi.h>
 #include <WebServer.h>
+#include <ESP32httpUpdate.h>
 
 WebServer server(80);
 
@@ -23,9 +25,9 @@ WebServer server(80);
 #ifdef ESP8266
 int is_esp32 = 0;
 int is_esp8266 = 1;
-
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
+#include <ESP8266httpUpdate.h>
 ESP8266WebServer server(80);
 
 #define STATUS_BUZZER 16
@@ -41,6 +43,7 @@ int debug = 0;
 // Load config file
 #include <loadConfig.h>
 DynamicJsonDocument configDoc(JSON_FILE_SIZE);
+//! shrink to fit the size of the JSON document
 
 // MQTT Client
 WiFiClient espClient;
@@ -62,6 +65,7 @@ void connectToWiFi()
   IPAddress gateway_ip;
   IPAddress subnet_ip;
   IPAddress dns_ip;
+
   ip.fromString(static_ip);
   gateway_ip.fromString(gateway);
   subnet_ip.fromString(subnet);
@@ -124,6 +128,7 @@ void connectToWiFi()
     Serial.println("Connected to the WiFi network");
     Serial.println(String(WiFi.getHostname()) + " @ " + WiFi.localIP().toString());
   }
+  // WiFi.setAutoReconnect(true);
 }
 
 void connectToMQTT()
@@ -245,6 +250,105 @@ void publish_error_message(String message)
   if (debug)
     Serial.println(docString);
   mqttclient.publish(configDoc["mqtt"]["topic"].as<String>().c_str(), docString.c_str());
+}
+
+void ota()
+{
+
+  ArduinoOTA.setHostname(configDoc["wifi"]["hostname"].as<const char *>());
+  ArduinoOTA.setPassword(configDoc["ota"]["password"].as<const char *>());
+  ArduinoOTA.setPort(configDoc["ota"]["port"].as<int>());
+  ArduinoOTA.begin();
+
+  if (debug)
+  {
+    Serial.println("-----------------------");
+    Serial.println("OTA Initialized");
+    Serial.print("Hostname: ");
+    Serial.println(configDoc["wifi"]["hostname"].as<const char *>());
+    Serial.print("Password: ");
+    Serial.println(configDoc["ota"]["password"].as<const char *>());
+    Serial.print("Port: ");
+    Serial.println(configDoc["ota"]["port"].as<int>());
+  }
+
+  ArduinoOTA.onStart([]()
+                     { Serial.println("Start"); });
+  ArduinoOTA.onEnd([]()
+                   {
+    Serial.println("\nEnd");
+    ESP.restart(); });
+  ArduinoOTA.onProgress([](unsigned int progress, unsigned int total)
+                        {
+                          Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+                        });
+
+  ArduinoOTA.onError([](ota_error_t error)
+                     {
+    Serial.printf("Error[%u]: ", error);
+    if (error == OTA_AUTH_ERROR)
+    {
+      Serial.println("Auth Failed");
+    }
+    else if (error == OTA_BEGIN_ERROR)
+    {
+      Serial.println("Begin Failed");
+    }
+    else if (error == OTA_CONNECT_ERROR)
+    {
+      Serial.println("Connect Failed");
+    }
+    else if (error == OTA_RECEIVE_ERROR)
+    {
+      Serial.println("Receive Failed");
+    }
+    else if (error == OTA_END_ERROR)
+    {
+      Serial.println("End Failed");
+    } });
+}
+
+void receive_ota_update()
+{
+  Serial.println("Firmware Update Received");
+  server.send(200, "text/plain", "Receiving and Updating");
+  HTTPUpload &upload = server.upload();
+  if (upload.status == UPLOAD_FILE_START)
+  {
+    Serial.println("File upload started");
+    Serial.println("File name: " + upload.filename);
+  }
+
+  //   if (SPIFFS.exists("/update.bin")) {
+  //     SPIFFS.remove("/update.bin");
+  //   }
+  //   Update.begin(upload.totalSize);
+  // } else if (upload.status == UPLOAD_FILE_WRITE) {
+  //   Serial.print(".");
+  //   if (Update.write(upload.buf, upload.currentSize) != upload.currentSize) {
+  //     Serial.println("Error during firmware upload");
+  //   }
+  // } else if (upload.status == UPLOAD_FILE_END) {
+  //   if (Update.end(true)) {
+  //     Serial.println("File upload success, rebooting...");
+  //     server.send(200, "text/plain", "Update success, rebooting...");
+  //     delay(100);
+  //     ESP.restart();
+  //   } else {
+  //     Serial.println("Error during firmware update");
+  //     server.send(500, "text/plain", "Error during firmware update");
+  //   }
+  // }
+}
+
+void check_current_firmware(int current_updated_ver, int last_stable_ver)
+{
+  Serial.println("Current Firmware - " + current_updated_ver);
+  Serial.println("Intializing Firmware Checks ...");
+}
+
+void rollback()
+{
 }
 
 void callback(char *topic, byte *payload, unsigned short int length)
@@ -439,6 +543,9 @@ void setup()
   // Connect to WiFi
   connectToWiFi();
 
+  // Initialize OTA
+  ota();
+
   // Define HTTP endpoint
   // Handle Root(/) endpoint
   server.on("/", HTTP_GET, handleRootGet);
@@ -447,6 +554,10 @@ void setup()
   // Handle Config(/config) endpoint
   server.on("/config", HTTP_GET, handleConfigGet);
   server.on("/config", HTTP_POST, methodNotAllowed);
+
+  // Handle OTA(/otaupdate) endpoint
+  server.on("/otaupdate", HTTP_GET, methodNotAllowed);
+  server.on("/otaupdate", HTTP_POST, receive_ota_update);
 
   // Handle 404
   server.onNotFound(notFound);
@@ -475,12 +586,15 @@ void setup()
 
   mqttclient.setServer(server.c_str(), port.toInt());
   mqttclient.setCallback(callback);
+
   connectToMQTT();
 }
 
 void loop()
 {
+
   server.handleClient();
+  ArduinoOTA.handle();
 
   if (WiFi.status() != WL_CONNECTED)
   {
@@ -496,7 +610,7 @@ void loop()
     previousMillis = currentMillis;
     if (mqttclient.connected())
       publish_keep_alive_message();
-    else
+    else 
     {
       Serial.println("-----------------------");
       Serial.println("MQTT Connection lost.. Reconnecting..");
