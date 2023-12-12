@@ -4,7 +4,7 @@ import json
 # Read the config file and get the values
 with open('data/config.json', 'r', encoding='utf-8') as json_data_file:
     config = json.load(json_data_file)
-    
+  
 mqtt_host = config['mqtt']['host']
 username = config['mqtt']['username']
 password = config['mqtt']['password']
@@ -14,7 +14,7 @@ current_state_message = {
     'origin': 'check_mqtt.py',
     'messageType': 'current_state',
     'message': {
-        'device_id': 'YELLOW_LED'
+        'device_id': 'BLUE_LED'
     }
 }
 

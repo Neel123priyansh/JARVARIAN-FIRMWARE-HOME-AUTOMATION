@@ -19,8 +19,8 @@
   "devices": [
     {
       "name": "",
-      "type": "", # `INPUT` or `OUTPUT`
-      "pin": "" # See ReadMe.md
+      "type": "", // `INPUT` or `OUTPUT`
+      "pin": "" // See ReadMe.md for pin mapping
     }
   ]
 }
