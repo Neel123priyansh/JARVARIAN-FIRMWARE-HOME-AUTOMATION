@@ -5,8 +5,6 @@
 
 const size_t JSON_FILE_SIZE = 2048;
 
-using JsonDocumentType = ArduinoJson::V6213PB2::DynamicJsonDocument;
-
 void statusBuzzer(int times, int delayTime)
 {
     for (int i = 0; i < times; i++)
@@ -18,7 +16,7 @@ void statusBuzzer(int times, int delayTime)
     }
 }
 
-void printConfig(JsonDocumentType &configDoc)
+void printConfig(DynamicJsonDocument &configDoc)
 {
     if (debug)
     {
@@ -84,7 +82,7 @@ File openConfigFile()
     return configFile;
 }
 
-void initilizedPins(JsonDocumentType &configDoc)
+void initilizedPins(DynamicJsonDocument &configDoc)
 {
     // Loop through the devices array in the JSON document
     if (debug)
