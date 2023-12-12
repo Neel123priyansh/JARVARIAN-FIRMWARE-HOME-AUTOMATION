@@ -1,0 +1,26 @@
+{
+  "wifi": {
+    "ssid": "",
+    "password": "",
+    "hostname": "",
+    "ip": "",
+    "gateway": "",
+    "subnet": "",
+    "dns": ""
+  },
+
+  "mqtt": {
+    "host": "",
+    "port": "",
+    "username": "",
+    "password": "",
+    "topic": ""
+  },
+  "devices": [
+    {
+      "name": "",
+      "type": "", // `INPUT` or `OUTPUT`
+      "pin": "" // See ReadMe.md for pin mapping
+    }
+  ]
+}
