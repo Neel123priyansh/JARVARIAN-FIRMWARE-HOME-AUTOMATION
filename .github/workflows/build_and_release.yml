@@ -27,7 +27,7 @@ jobs:
 
       - name: Build Firmware for ESP8266
         id: build-firmware-esp8266
-        run: platformio run -e nodemcuv2
+        run: platformio run -e nodemcu
 
       - name: Create Release
         id: create-release
@@ -39,7 +39,14 @@ jobs:
           release_name: ${{ github.ref }}
           draft: false
           prerelease: false
-  
+
+      - name: Upload Firmware
+        id: upload-firmware
+        uses: actions/upload-artifact@v2
+        with:
+          name: firmware
+          path: .pio/build/nodemcu/firmware.bin
+
   esp32:
     runs-on: ubuntu-latest
     steps:
@@ -71,3 +78,10 @@ jobs:
           release_name: ${{ github.ref }}
           draft: false
           prerelease: false
+
+      - name: Upload Firmware
+        id: upload-firmware
+        uses: actions/upload-artifact@v2
+        with:
+          name: firmware
+          path: .pio/build/esp32/firmware.bin
