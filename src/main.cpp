@@ -182,6 +182,10 @@ void handleConfigGet()
   String configString;
   serializeJson(configDoc, configString);
 
+  configString.replace(configDoc["ota"]["password"].as<String>(), "******************");
+  configString.replace(configDoc["mqtt"]["password"].as<String>(), "******************");
+  configString.replace(configDoc["wifi"]["password"].as<String>(), "******************");
+
   if (debug)
   {
     Serial.println("-----------------------");
@@ -608,14 +612,13 @@ void loop()
   if (currentMillis - previousMillis > 10000)
   {
     previousMillis = currentMillis;
-    if (mqttclient.connected())
+    if (MQTT_CONNECTED == mqttclient.state())
       publish_keep_alive_message();
     else 
     {
       Serial.println("-----------------------");
       Serial.println("MQTT Connection lost.. Reconnecting..");
       connectToMQTT();
-    }
   }
   mqttclient.loop();
 }
