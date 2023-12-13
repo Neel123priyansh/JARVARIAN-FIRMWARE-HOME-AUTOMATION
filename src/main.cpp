@@ -36,8 +36,10 @@ ESP8266WebServer server(80);
 
 #ifdef DEBUG
 int debug = 1;
+int update_firmware = 0;
 #else
 int debug = 0;
+int update_firmware = 1;
 #endif
 
 // Load config file
@@ -283,9 +285,7 @@ void ota()
     Serial.println("\nEnd");
     ESP.restart(); });
   ArduinoOTA.onProgress([](unsigned int progress, unsigned int total)
-                        {
-                          Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
-                        });
+                        { Serial.printf("Progress: %u%%\r", (progress / (total / 100))); });
 
   ArduinoOTA.onError([](ota_error_t error)
                      {
@@ -312,6 +312,7 @@ void ota()
     } });
 }
 
+//TODO: Trigger OTA update from MQTT
 void receive_ota_update()
 {
   Serial.println("Firmware Update Received");
@@ -548,7 +549,14 @@ void setup()
   connectToWiFi();
 
   // Initialize OTA
-  ota();
+  if (debug)
+  {
+    ota();
+  }
+  if (update_firmware)
+  {
+    receive_ota_update();
+  }
 
   // Define HTTP endpoint
   // Handle Root(/) endpoint
@@ -614,11 +622,11 @@ void loop()
     previousMillis = currentMillis;
     if (MQTT_CONNECTED == mqttclient.state())
       publish_keep_alive_message();
-    else 
+    else
     {
       Serial.println("-----------------------");
       Serial.println("MQTT Connection lost.. Reconnecting..");
       connectToMQTT();
+    }
+    mqttclient.loop();
   }
-  mqttclient.loop();
-}
