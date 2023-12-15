@@ -3,6 +3,20 @@
 - In ESP32, pin `27` is for `STATUS_BUZZER` and pin `2` is for `BUILTIN_LED`.
 - In ESP8266, pin `D0` is for `STATUS_BUZZER` and pin `D4` is for `BUILTIN_LED`.
 
+## Setup Device
+
+- Firmware
+
+```python
+python -m esptool ...
+```
+
+- File System
+
+```python
+python -m esptool ...
+```
+
 ## ESP8266 Pinout
 
 ```c
@@ -34,9 +48,6 @@
   1. Failed to mount LittleFS
   2. Failed to open `config.json` OR `config.json` not found
   3. Failed to parse `config.json`
-
-* `4 Beeps` -> Invalid pin found in `config.json`
-
 - `4 Beeps` -> Invalid pin found in `config.json`
 - `5 Beeps` -> Failed to connect to MQTT Server.
 
@@ -53,11 +64,11 @@
 
   ```json
   {
-    "origin": "$mqtt_client_id", // mqtt client id from config.json
+    "origin": "$wifi_hostname", // from config.json
     "messageType": "keep_alive",
     "message": {
       "keep_alive_counter": 10, // number of keep-alive messages sent from last reboot (starting from 1)
-      "uptime": 1000 // uptime in seconds
+      "uptime": 100 // uptime in seconds
     }
   }
   ```
@@ -71,7 +82,7 @@
       "origin": "controller",
       "messageType": "current_state",
       "message": {
-        "device_id": "Bulb" // device id from config.json (case sensitive)
+        "device_id": "Bulb" // device id should be defined in config.json (case sensitive)
       }
     }
     ```
@@ -80,10 +91,10 @@
 
     ```json
     {
-    "origin": "$mqtt_client_id",  // mqtt client id from config.json
+    "origin": "$wifi_hostname",
     "messageType": "current_state",
     "message": {
-      "device_id": "Bulb", // device id from config.json (case sensitive)
+      "device_id": "Bulb",
       "state": "ON" // current state of device ('ON' or 'OFF')
     }
     ```
@@ -97,7 +108,7 @@
       "origin": "controller",
       "messageType": "change_state",
       "message": {
-        "device_id": "Bulb", // device id from config.json (case sensitive)
+        "device_id": "Bulb",
         "state": "ON" // target state ('ON' or 'OFF')
       }
     }
@@ -107,10 +118,10 @@
 
     ```json
     {
-      "origin": "$mqtt_client_id", // mqtt client id from config.json
+      "origin": "$wifi_hostname",
       "messageType": "current_state",
       "message": {
-        "device_id": "Bulb", // device id from config.json (case sensitive)
+        "device_id": "Bulb",
         "state": "ON" // current state ('ON' or 'OFF')
       }
     }
@@ -122,7 +133,7 @@
 
     ```json
     {
-      "origin": "$mqtt_client_id", // mqtt client id from config.json
+      "origin": "$wifi_hostname",
       "messageType": "error",
       "message": {
         "message": "ERROR_MESSAGE"
@@ -130,17 +141,19 @@
     }
     ```
 
+    > `TODO: Add all possible error messages here.`
+
   - If `state` is changed using physical buttons: (Not Implemented Yet)
 
     - From device to server:
 
       ```json
       {
-        "origin": "$mqtt_client_id", // mqtt client id from config.json
+        "origin": "$wifi_hostname",
         "messageType": "current_state",
         "message": {
-          "device_id": "Bulb", // device id from config.json (case sensitive)
-          "state": "ON" // current state ('ON' or 'OFF')
+          "device_id": "Bulb",
+          "state": "ON"
         }
       }
       ```
@@ -151,4 +164,4 @@
 
 ## See Team Contributions here
 
-https://github.com/Jarvis-AI-project/JARVARIAN-FIRMWARE-HOME-AUTOMATION/graphs/contributors
+[https://github.com/Jarvis-AI-project/JARVARIAN-FIRMWARE-HOME-AUTOMATION/graphs/contributors](https://github.com/Jarvis-AI-project/JARVARIAN-FIRMWARE-HOME-AUTOMATION/graphs/contributors)
