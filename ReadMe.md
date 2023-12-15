@@ -29,8 +29,6 @@ python -m esptool ...
     D6  = 12;
     D7  = 13;
     D8  = 15;
-    D9  = 3;
-    D10 = 1;
 ```
 
 ## ESP32 Pinout
