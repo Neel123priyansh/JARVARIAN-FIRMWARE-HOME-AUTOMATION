@@ -16,6 +16,12 @@
     "password": "",
     "topic": ""
   },
+
+  "ota": {
+    "port": "",
+    "password": ""
+  },
+
   "devices": [
     {
       "name": "",

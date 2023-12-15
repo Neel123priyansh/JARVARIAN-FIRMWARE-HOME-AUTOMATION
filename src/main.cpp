@@ -174,7 +174,15 @@ void handleRootGet()
 
 void handleConfigGet()
 {
+  // Mask passwords (Approach 1)
+  // DynamicJsonDocument configDocCopy(JSON_FILE_SIZE);
+  // configDocCopy = configDoc;
+  // configDocCopy["wifi"]["password"] = "********";
+  // configDocCopy["mqtt"]["password"] = "********";
+  // configDocCopy["ota"]["password"] = "********";
+  
   String configString;
+  // serializeJson(configDocCopy, configString);
   serializeJson(configDoc, configString);
 
   if (debug)
@@ -205,7 +213,7 @@ void notFound()
 void publish_keep_alive_message()
 {
   StaticJsonDocument<256> doc;
-  doc["origin"] = configDoc["mqtt"]["clientID"].as<String>();
+  doc["origin"] = configDoc["wifi"]["hostname"].as<String>();
   doc["messageType"] = "keep_alive";
   doc["message"]["keep_alive_counter"] = keep_alive_counter;
   doc["message"]["uptime"] = millis() / 1000; // uptime in seconds
@@ -221,7 +229,7 @@ void publish_keep_alive_message()
 void publish_current_state_message(int pinNumber, String deviceName)
 {
   StaticJsonDocument<256> doc;
-  doc["origin"] = configDoc["mqtt"]["clientID"].as<String>();
+  doc["origin"] = configDoc["wifi"]["hostname"].as<String>();
   doc["messageType"] = "current_state";
   doc["message"]["device_id"] = deviceName;
   doc["message"]["state"] = digitalRead(pinNumber) ? "ON" : "OFF";
@@ -236,7 +244,7 @@ void publish_current_state_message(int pinNumber, String deviceName)
 void publish_error_message(String message)
 {
   StaticJsonDocument<256> doc;
-  doc["origin"] = configDoc["mqtt"]["clientID"].as<String>();
+  doc["origin"] = configDoc["wifi"]["hostname"].as<String>();
   doc["messageType"] = "error";
   doc["message"]["message"] = message;
 
@@ -274,7 +282,7 @@ void callback(char *topic, byte *payload, unsigned short int length)
   }
 
   // Skip messages originating from this device
-  if (messageDoc["origin"].as<String>().equals(configDoc["mqtt"]["clientID"].as<String>()))
+  if (messageDoc["origin"].as<String>().equals(configDoc["wifi"]["hostname"].as<String>()))
     return;
 
   // Handle change_state messages
@@ -432,6 +440,9 @@ void setup()
   // Print the config file
   if (debug)
     printConfig(configDoc);
+
+  // Shrink to fit configDoc to memory
+  // configDoc.shrinkToFit();
 
   // Initialize pins
   initilizedPins(configDoc);
