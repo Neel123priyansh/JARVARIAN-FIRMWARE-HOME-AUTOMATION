@@ -23,13 +23,16 @@ python -m esptool ...
     D0  = 16; // STATUS_BUZZER
     D1  = 5;
     D2  = 4;
-    D3  = 0;
+    D3  = 0; # FLASH BUTTON
     D4  = 2;  // BUILTIN_LED
-    D5  = 14;
-    D6  = 12;
-    D7  = 13;
-    D8  = 15;
+    D5  = 14; # HSCLK
+    D6  = 12; # HMISO
+    D7  = 13; # HMOSI
+    D8  = 15; # HCS
 ```
+
+![NodeMCU Pinout](extras/pinout_diagrams/esp8266-nodemcu/pinout.png)
+[Learn More about NodeMCU Pins](https://randomnerdtutorials.com/esp8266-pinout-reference-gpios/)
 
 ## ESP32 Pinout
 
@@ -70,7 +73,6 @@ python -m esptool ...
     }
   }
   ```
-
 - `current_state` message:
 
   - From server to device:
@@ -84,7 +86,6 @@ python -m esptool ...
       }
     }
     ```
-
   - From device to server:
 
     ```json
@@ -96,7 +97,6 @@ python -m esptool ...
       "state": "ON" // current state of device ('ON' or 'OFF')
     }
     ```
-
 - `change_state` message:
 
   - From server to device:
@@ -111,7 +111,6 @@ python -m esptool ...
       }
     }
     ```
-
   - From device to server:
 
     ```json
@@ -124,7 +123,6 @@ python -m esptool ...
       }
     }
     ```
-
 - `error` message:
 
   - From device to server:
@@ -140,7 +138,7 @@ python -m esptool ...
     ```
 
     > `TODO: Add all possible error messages here.`
-
+    >
   - If `state` is changed using physical buttons: (Not Implemented Yet)
 
     - From device to server:

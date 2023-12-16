@@ -221,8 +221,6 @@ void publish_keep_alive_message()
 
   String docString;
   serializeJson(doc, docString);
-  if (debug)
-    Serial.println(docString);
   mqttclient.publish(configDoc["mqtt"]["topic"].as<String>().c_str(), docString.c_str());
 }
 
@@ -237,7 +235,7 @@ void publish_current_state_message(int pinNumber, String deviceName)
   String docString;
   serializeJson(doc, docString);
   if (debug)
-    Serial.println(docString);
+    Serial.println("Response: " + docString);
   mqttclient.publish(configDoc["mqtt"]["topic"].as<String>().c_str(), docString.c_str());
 }
 
@@ -251,7 +249,7 @@ void publish_error_message(String message)
   String docString;
   serializeJson(doc, docString);
   if (debug)
-    Serial.println(docString);
+    Serial.println("Response: " + docString);
   mqttclient.publish(configDoc["mqtt"]["topic"].as<String>().c_str(), docString.c_str());
 }
 
@@ -261,14 +259,6 @@ void callback(char *topic, byte *payload, unsigned short int length)
   String message;
   for (unsigned int i = 0; i < length; i++)
     message += (char)payload[i];
-
-  // if debug is enabled, print the message
-  if (debug)
-  {
-    Serial.println("-----------------------");
-    Serial.println("Message arrived in topic: " + String(topic));
-    Serial.println("Message: " + String(message));
-  }
 
   // Parse message to JSON
   StaticJsonDocument<256> messageDoc;
@@ -284,6 +274,14 @@ void callback(char *topic, byte *payload, unsigned short int length)
   // Skip messages originating from this device
   if (messageDoc["origin"].as<String>().equals(configDoc["wifi"]["hostname"].as<String>()))
     return;
+
+  // if debug is enabled, print the message
+  if (debug)
+  {
+    Serial.println("-----------------------");
+    Serial.println("Message arrived in topic: " + String(topic));
+    Serial.println("Message: " + String(message));
+  }
 
   // Handle change_state messages
   if (messageDoc["messageType"].as<String>().equals("change_state"))
@@ -333,6 +331,7 @@ void callback(char *topic, byte *payload, unsigned short int length)
       }
     }
     Serial.println("Device (" + deviceId + ") not found in config file");
+    publish_error_message("Device (" + deviceId + ") not found in config file");
     return;
   }
 
@@ -447,9 +446,6 @@ void setup()
   // Initialize pins
   initilizedPins(configDoc);
 
-  // Connect to WiFi
-  connectToWiFi();
-
   // Define HTTP endpoint
   // Handle Root(/) endpoint
   server.on("/", HTTP_GET, handleRootGet);
@@ -486,7 +482,6 @@ void setup()
 
   mqttclient.setServer(server.c_str(), port.toInt());
   mqttclient.setCallback(callback);
-  connectToMQTT();
 }
 
 void loop()
