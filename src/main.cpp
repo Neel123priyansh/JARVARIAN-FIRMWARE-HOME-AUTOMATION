@@ -1,7 +1,8 @@
 #include <Arduino.h>
 #include <PubSubClient.h>
 #include <ArduinoOTA.h>
-
+#include <InfluxDbClient.h>
+#include <InfluxDbCloud.h>
 // Include Functionality according to the board
 #if !(defined(ESP32) || defined(ESP8266))
 #error "This code is intended to run on the ESP32 or ESP8266 platform!"
@@ -50,6 +51,7 @@ DynamicJsonDocument configDoc(JSON_FILE_SIZE);
 // MQTT Client
 WiFiClient espClient;
 PubSubClient mqttclient(espClient);
+InfluxDBClient client;
 
 // Setting `0` as first `keep-alive` message is sent immediately after connection.
 unsigned long previousMillis = 0;
@@ -312,7 +314,7 @@ void ota()
     } });
 }
 
-//TODO: Trigger OTA update from MQTT
+// TODO: Trigger OTA update from MQTT
 void receive_ota_update()
 {
   Serial.println("Firmware Update Received");
@@ -471,6 +473,36 @@ void callback(char *topic, byte *payload, unsigned short int length)
   }
 }
 
+void connectToInfluxDB()
+
+{
+  client.setConnectionParams(configDoc["influxdb"]["host"].as<String>(), configDoc["influxdb"]["org"].as<String>(), configDoc["influxdb"]["bucket"].as<String>(), configDoc["influxdb"]["token"].as<String>());
+  if (debug)
+  {
+    Serial.println("-----------------------");
+    Serial.println("Connecting to InfluxDB...");
+    Serial.print("Host: ");
+    Serial.println(configDoc["influxdb"]["host"].as<String>());
+    Serial.print("Org: ");
+    Serial.println(configDoc["influxdb"]["org"].as<String>());
+    Serial.print("Bucket: ");
+    Serial.println(configDoc["influxdb"]["bucket"].as<String>());
+    Serial.print("Token: ");
+    Serial.println(configDoc["influxdb"]["token"].as<String>());
+  }
+  if (client.validateConnection())
+  {
+    if (debug)
+      Serial.println("Connected to InfluxDB:"+client.getServerUrl()+client.isConnected());
+  }
+  else
+  {
+    if (debug)
+      Serial.println("InfluxDB connection failed:"+client.getLastErrorMessage());
+    statusBuzzer(5, 100);
+  }
+}
+
 void setup()
 {
   // Initialize Serial
@@ -547,6 +579,7 @@ void setup()
 
   // Connect to WiFi
   connectToWiFi();
+  connectToInfluxDB();
 
   // Initialize OTA
   if (debug)
@@ -599,6 +632,7 @@ void setup()
   mqttclient.setServer(server.c_str(), port.toInt());
   mqttclient.setCallback(callback);
 
+
   connectToMQTT();
 }
 
@@ -607,6 +641,13 @@ void loop()
 
   server.handleClient();
   ArduinoOTA.handle();
+
+  // if (client.validateConnection() == false)
+  // {
+  //   if (debug)
+  //     Serial.println("InfluxDB connection lost.. Reconnecting..");
+  //   connectToInfluxDB();
+  // }
 
   if (WiFi.status() != WL_CONNECTED)
   {
@@ -630,3 +671,5 @@ void loop()
     }
     mqttclient.loop();
   }
+  // 
+}

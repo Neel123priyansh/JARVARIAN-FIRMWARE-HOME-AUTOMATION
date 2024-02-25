@@ -2,6 +2,7 @@
 
 - In ESP32, pin `27` is for `STATUS_BUZZER` and pin `2` is for `BUILTIN_LED`.
 - In ESP8266, pin `D0` is for `STATUS_BUZZER` and pin `D4` is for `BUILTIN_LED`.
+- To flash the `JSON` use this command `pio run -e <environment_name> --target uploadfs`.
 
 ## ESP8266 Pinout
 
