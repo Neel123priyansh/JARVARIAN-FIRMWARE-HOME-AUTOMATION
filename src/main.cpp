@@ -369,8 +369,6 @@ void callback(char *topic, byte *payload, unsigned short int length)
   }
 }
 
-
-
 void setup()
 {
   // Initialize Serial
@@ -447,6 +445,8 @@ void setup()
 
   // Initialize pins
   initilizedPins(configDoc);
+
+  //! Connect to WiFi
   connectToWiFi();
 
   // Define HTTP endpoint
@@ -484,7 +484,9 @@ void setup()
   }
 
   mqttclient.setServer(server.c_str(), port.toInt());
+  mqttclient.setKeepAlive(60);
   mqttclient.setCallback(callback);
+  //! Connect to MQTT
   connectToMQTT();
 }
 
@@ -503,7 +505,7 @@ void loop()
 
   // publish a message roughly every 5 seconds if connected else reconnect
   unsigned long currentMillis = millis();
-  if (currentMillis - previousMillis > 10000)
+  if (currentMillis - previousMillis > 50000)
   {
     previousMillis = currentMillis;
     if (mqttclient.connected())
