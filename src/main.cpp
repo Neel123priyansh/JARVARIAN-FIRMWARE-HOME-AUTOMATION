@@ -677,7 +677,7 @@ void loop()
       Serial.println("MQTT Connection lost.. Reconnecting..");
       connectToMQTT();
     }
-    mqttclient.loop();
   }
-  //
+    mqttclient.loop();
+
 }
