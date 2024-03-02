@@ -180,7 +180,7 @@ void handleConfigGet()
   // configDocCopy["wifi"]["password"] = "********";
   // configDocCopy["mqtt"]["password"] = "********";
   // configDocCopy["ota"]["password"] = "********";
-  
+
   String configString;
   // serializeJson(configDocCopy, configString);
   serializeJson(configDoc, configString);
@@ -490,8 +490,10 @@ void setup()
 
 void loop()
 {
+  // Handle HTTP requests
   server.handleClient();
 
+  // WiFi
   if (WiFi.status() != WL_CONNECTED)
   {
     if (debug)
@@ -514,4 +516,8 @@ void loop()
     }
   }
   mqttclient.loop();
+
+  // OTA
+
+  // INPUT Buttons
 }

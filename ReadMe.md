@@ -73,6 +73,7 @@ python -m esptool ...
     }
   }
   ```
+
 - `current_state` message:
 
   - From server to device:
@@ -86,6 +87,7 @@ python -m esptool ...
       }
     }
     ```
+
   - From device to server:
 
     ```json
@@ -97,6 +99,7 @@ python -m esptool ...
       "state": "ON" // current state of device ('ON' or 'OFF')
     }
     ```
+
 - `change_state` message:
 
   - From server to device:
@@ -111,6 +114,7 @@ python -m esptool ...
       }
     }
     ```
+
   - From device to server:
 
     ```json
@@ -123,6 +127,7 @@ python -m esptool ...
       }
     }
     ```
+
 - `error` message:
 
   - From device to server:
