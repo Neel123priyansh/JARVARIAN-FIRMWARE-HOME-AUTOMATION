@@ -650,12 +650,12 @@ void loop()
   server.handleClient();
   ArduinoOTA.handle();
 
-  // if (client.validateConnection() == false)
-  // {
-  //   if (debug)
-  //     Serial.println("InfluxDB connection lost.. Reconnecting..");
-  //   connectToInfluxDB();
-  // }
+  if (client.validateConnection() == false)
+  {
+    if (debug)
+      Serial.println("InfluxDB connection lost.. Reconnecting..");
+    connectToInfluxDB();
+  }
 
   if (WiFi.status() != WL_CONNECTED)
   {
@@ -673,7 +673,7 @@ void loop()
       publish_keep_alive_message();
     else
     {
-      Serial.println("-----------------------");
+      if (debug)
       Serial.println("MQTT Connection lost.. Reconnecting..");
       connectToMQTT();
     }
