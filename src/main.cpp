@@ -3,6 +3,7 @@
 #include <ArduinoOTA.h>
 #include <InfluxDbClient.h>
 #include <InfluxDbCloud.h>
+#include <LoadConfig.h>
 // Include Functionality according to the board
 #if !(defined(ESP32) || defined(ESP8266))
 #error "This code is intended to run on the ESP32 or ESP8266 platform!"
@@ -56,6 +57,8 @@ InfluxDBClient client;
 // Setting `0` as first `keep-alive` message is sent immediately after connection.
 unsigned long previousMillis = 0;
 unsigned long keep_alive_counter = 1;
+
+
 
 void connectToWiFi()
 {
@@ -292,26 +295,11 @@ void ota()
   ArduinoOTA.onError([](ota_error_t error)
                      {
     Serial.printf("Error[%u]: ", error);
-    if (error == OTA_AUTH_ERROR)
-    {
-      Serial.println("Auth Failed");
-    }
-    else if (error == OTA_BEGIN_ERROR)
-    {
-      Serial.println("Begin Failed");
-    }
-    else if (error == OTA_CONNECT_ERROR)
-    {
-      Serial.println("Connect Failed");
-    }
-    else if (error == OTA_RECEIVE_ERROR)
-    {
-      Serial.println("Receive Failed");
-    }
-    else if (error == OTA_END_ERROR)
-    {
-      Serial.println("End Failed");
-    } });
+   if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
+else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
+else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
+else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
+else if (error == OTA_END_ERROR) Serial.println("End Failed"); });
 }
 
 // TODO: Trigger OTA update from MQTT
@@ -324,7 +312,9 @@ void receive_ota_update()
   {
     Serial.println("File upload started");
     Serial.println("File name: " + upload.filename);
+
   }
+  
 
   //   if (SPIFFS.exists("/update.bin")) {
   //     SPIFFS.remove("/update.bin");
@@ -354,9 +344,10 @@ void check_current_firmware(int current_updated_ver, int last_stable_ver)
   Serial.println("Intializing Firmware Checks ...");
 }
 
-void rollback()
-{
-}
+
+
+
+
 
 void callback(char *topic, byte *payload, unsigned short int length)
 {
@@ -493,14 +484,27 @@ void connectToInfluxDB()
   if (client.validateConnection())
   {
     if (debug)
-      Serial.println("Connected to InfluxDB:"+client.getServerUrl()+client.isConnected());
+      Serial.println("Connected to InfluxDB:" + client.getServerUrl() + client.isConnected());
   }
   else
   {
     if (debug)
-      Serial.println("InfluxDB connection failed:"+client.getLastErrorMessage());
+      Serial.println("InfluxDB connection failed:" + client.getLastErrorMessage());
     statusBuzzer(5, 100);
   }
+}
+
+void list_files()
+{
+  Dir file = LittleFS.openDir("/");
+  String output;
+
+  while (file.next())
+  {
+    output += file.fileName();
+  }
+
+  server.send(200, "text/plain", output);
 }
 
 void setup()
@@ -604,6 +608,12 @@ void setup()
   server.on("/otaupdate", HTTP_GET, methodNotAllowed);
   server.on("/otaupdate", HTTP_POST, receive_ota_update);
 
+  server.on("/listfiles", HTTP_GET, list_files);
+  server.on("/listfiles", HTTP_POST, methodNotAllowed);
+
+  server.on("/firmware", HTTP_GET, methodNotAllowed);
+  server.on("/firmware", HTTP_POST, methodNotAllowed);
+
   // Handle 404
   server.onNotFound(notFound);
 
@@ -631,7 +641,6 @@ void setup()
 
   mqttclient.setServer(server.c_str(), port.toInt());
   mqttclient.setCallback(callback);
-
 
   connectToMQTT();
 }
@@ -671,5 +680,5 @@ void loop()
     }
     mqttclient.loop();
   }
-  // 
+  //
 }
