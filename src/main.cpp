@@ -369,6 +369,8 @@ void callback(char *topic, byte *payload, unsigned short int length)
   }
 }
 
+
+
 void setup()
 {
   // Initialize Serial
@@ -445,6 +447,7 @@ void setup()
 
   // Initialize pins
   initilizedPins(configDoc);
+  connectToWiFi();
 
   // Define HTTP endpoint
   // Handle Root(/) endpoint
@@ -482,6 +485,7 @@ void setup()
 
   mqttclient.setServer(server.c_str(), port.toInt());
   mqttclient.setCallback(callback);
+  connectToMQTT();
 }
 
 void loop()
