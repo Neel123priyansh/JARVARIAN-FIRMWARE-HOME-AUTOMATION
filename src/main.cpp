@@ -3,7 +3,6 @@
 #include <ArduinoOTA.h>
 #include <InfluxDbClient.h>
 #include <InfluxDbCloud.h>
-#include <LoadConfig.h>
 // Include Functionality according to the board
 #if !(defined(ESP32) || defined(ESP8266))
 #error "This code is intended to run on the ESP32 or ESP8266 platform!"
@@ -45,7 +44,7 @@ int update_firmware = 1;
 #endif
 
 // Load config file
-#include <loadConfig.h>
+#include <LoadConfig.h>
 DynamicJsonDocument configDoc(JSON_FILE_SIZE);
 //! shrink to fit the size of the JSON document
 
