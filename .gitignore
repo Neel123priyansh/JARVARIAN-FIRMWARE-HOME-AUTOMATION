@@ -1,5 +1,6 @@
 .pio
 .vscode
-config.json
+data/config.json
+src/config.h
 test*
 temp*
