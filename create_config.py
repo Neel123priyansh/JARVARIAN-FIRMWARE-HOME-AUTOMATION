@@ -24,7 +24,7 @@ def generate_load_function(json_data):
     load_function += "    // Initialize devices\n"
     load_function += "    config.devices = {\n"
     for device in json_data['devices']:
-        load_function += f"        {{\"{device['name']}\", \"{device['type']}\", \"{device['pin']}\"}},\n"
+        load_function += f"\tDevice(\"{device['name']}\",\"{device['type']}\",{device['pin']}),\n"
     load_function += "    };\n}\n"
 
     return load_function

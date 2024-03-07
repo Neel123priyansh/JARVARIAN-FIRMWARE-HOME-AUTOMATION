@@ -24,6 +24,8 @@ struct Device{
     std::string name;
     std::string type;
     std::int8_t pin;
+    Device(const std::string& name, const std::string& type, const std::int8_t& pin) : name(name), type(type), pin(pin) {}
+
     // std::int8_t state;
 };
 

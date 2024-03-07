@@ -36,7 +36,7 @@ void setup()
 
   // Turn ON the built-in LED
   if (is_esp32)
-    digitalWrite(BUILTIN_LED, HIGH);
+    digitalWrite(LED_BUILTIN, HIGH);
   else if (is_esp8266)
     // (In-Built LED works in Inverted Mode)
     digitalWrite(BUILTIN_LED, LOW);
@@ -47,6 +47,9 @@ void setup()
   // Load Configuration
   loadConfig(config);
   printConfig(config);
+  connectToWiFi(config.wifi);
+  connectToMQTT(callback);
+  
 }
 void loop()
 {
