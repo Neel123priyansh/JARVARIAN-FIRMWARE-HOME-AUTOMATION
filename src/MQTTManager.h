@@ -37,31 +37,29 @@ void publish_keep_alive_message(unsigned long &keep_alive_counter)
 
 void publish_current_state_message(int pinNumber, String deviceName)
 {
-  StaticJsonDocument<256> doc;
-  doc["origin"] = config.mqtt.clientID.c_str();
-  doc["messageType"] = "current_state";
-  doc["message"]["device_id"] = deviceName;
-  doc["message"]["state"] = digitalRead(pinNumber) ? "ON" : "OFF";
+    StaticJsonDocument<256> doc;
+    doc["origin"] = config.mqtt.clientID.c_str();
+    doc["messageType"] = "current_state";
+    doc["message"]["device_id"] = deviceName;
+    doc["message"]["state"] = digitalRead(pinNumber) ? "ON" : "OFF";
 
-  String docString;
-  serializeJson(doc, docString);
-  if (debug)
+    String docString;
+    serializeJson(doc, docString);
     Serial.println("Response: " + docString);
-  mqttclient.publish(config.mqtt.topic.c_str(), docString.c_str());
+    mqttclient.publish(config.mqtt.topic.c_str(), docString.c_str());
 }
 
 void publish_error_message(String message)
 {
-  StaticJsonDocument<256> doc;
-  doc["origin"] = config.mqtt.clientID.c_str();
-  doc["messageType"] = "error";
-  doc["message"]["message"] = message;
+    StaticJsonDocument<256> doc;
+    doc["origin"] = config.mqtt.clientID.c_str();
+    doc["messageType"] = "error";
+    doc["message"]["message"] = message;
 
-  String docString;
-  serializeJson(doc, docString);
-  if (debug)
+    String docString;
+    serializeJson(doc, docString);
     Serial.println("Response: " + docString);
-  mqttclient.publish(config.mqtt.topic.c_str(), docString.c_str());
+    mqttclient.publish(config.mqtt.topic.c_str(), docString.c_str());
 }
 
 void callback(char *topic, byte *payload, unsigned short int length)
@@ -78,8 +76,7 @@ void callback(char *topic, byte *payload, unsigned short int length)
     DeserializationError error = deserializeJson(messageDoc, message);
     if (error)
     {
-        if (debug)
-            Serial.println("Not a valid JSON message");
+        Serial.println("Not a valid JSON message");
         publish_error_message("Not a valid JSON message");
         return;
     }
@@ -88,18 +85,14 @@ void callback(char *topic, byte *payload, unsigned short int length)
     if (messageDoc["origin"].as<String>().equals(config.mqtt.clientID.c_str()))
         return;
 
-    if (debug)
-    {
-        Serial.println("-----------------------");
-        Serial.println("Message arrived in topic: " + String(topic));
-        Serial.println("Message: " + String(message));
-    }
+    Serial.println("-----------------------");
+    Serial.println("Message arrived in topic: " + String(topic));
+    Serial.println("Message: " + String(message));
 
     // Handle change_state messages
     if (messageDoc["messageType"].as<String>().equals("change_state"))
     {
-        if (debug)
-            Serial.println("Message type: change_state");
+        Serial.println("Message type: change_state");
 
         String deviceId = messageDoc["message"]["device_id"].as<String>();
         String state = messageDoc["message"]["state"].as<String>();
@@ -113,13 +106,10 @@ void callback(char *topic, byte *payload, unsigned short int length)
 
             if (deviceId.equals(name))
             {
-                if (debug)
-                {
-                    Serial.println("Device found in config file");
-                    Serial.println("Device name: " + name);
-                    Serial.println("Device pin: " + String(pin));
-                    Serial.println("Device type: " + type);
-                }
+                Serial.println("Device found in config file");
+                Serial.println("Device name: " + name);
+                Serial.println("Device pin: " + String(pin));
+                Serial.println("Device type: " + type);
 
                 if (state.equals("ON"))
                 {
@@ -135,8 +125,7 @@ void callback(char *topic, byte *payload, unsigned short int length)
                 }
                 else
                 {
-                    if (debug)
-                        Serial.println("Invalid state" + state);
+                    Serial.println("Invalid state" + state);
                     publish_error_message("Invalid state" + state);
                     return;
                 }
@@ -150,8 +139,7 @@ void callback(char *topic, byte *payload, unsigned short int length)
     // Handle current_state messages
     if (messageDoc["messageType"].as<String>().equals("current_state"))
     {
-        if (debug)
-            Serial.println("Message type: current_state");
+        Serial.println("Message type: current_state");
 
         String deviceId = messageDoc["message"]["device_id"].as<String>();
 
@@ -164,13 +152,10 @@ void callback(char *topic, byte *payload, unsigned short int length)
 
             if (deviceId.equals(name))
             {
-                if (debug)
-                {
-                    Serial.println("Device found in config file");
-                    Serial.println("Device name: " + name);
-                    Serial.println("Device pin: " + String(pin));
-                    Serial.println("Device type: " + type);
-                }
+                Serial.println("Device found in config file");
+                Serial.println("Device name: " + name);
+                Serial.println("Device pin: " + String(pin));
+                Serial.println("Device type: " + type);
 
                 publish_current_state_message(pin, name);
                 return;

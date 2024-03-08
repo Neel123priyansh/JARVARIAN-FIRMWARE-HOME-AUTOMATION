@@ -22,13 +22,11 @@ unsigned long keep_alive_counter = 1;
 
 void setup()
 {
-  // Initialize Serial
-  Serial.begin(115200);
-  if (debug)
-  {
-    Serial.println("-----------------------");
-    Serial.println("Serial initialized");
-  }
+  // Initialize Serial if debug is enabled
+  if (debug) Serial.begin(115200);
+
+  Serial.println("-----------------------");
+  Serial.println("Serial initialized");
 
   // Initialize Buzzer and In-Built LED
   pinMode(STATUS_BUZZER, OUTPUT);
@@ -58,8 +56,7 @@ void loop()
   // WiFi
   if (WiFi.status() != WL_CONNECTED && currentMillis - previousMillis >= 10000)
   {
-    if (debug)
-      Serial.println("Connecting to Wifi...");
+    Serial.println("Connecting to Wifi...");
     previousMillis = currentMillis;
     statusBuzzer(2, 100);
     connectToWiFi(config.wifi);
