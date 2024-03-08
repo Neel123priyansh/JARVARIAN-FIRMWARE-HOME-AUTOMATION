@@ -10,7 +10,7 @@ int is_esp8266 = 0;
 
 // can use both at same pins.
 #define STATUS_BUZZER 27
-#define BUILTIN_LED 2
+
 #endif
 
 #ifdef ESP8266

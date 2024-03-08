@@ -30,14 +30,14 @@ void setup()
 
   // Initialize Buzzer and In-Built LED
   pinMode(STATUS_BUZZER, OUTPUT);
-  pinMode(BUILTIN_LED, OUTPUT);
+  pinMode(LED_BUILTIN, OUTPUT);
 
   // Turn ON the built-in LED
   if (is_esp32)
     digitalWrite(LED_BUILTIN, HIGH);
   else if (is_esp8266)
     // (In-Built LED works in Inverted Mode)
-    digitalWrite(BUILTIN_LED, LOW);
+    digitalWrite(LED_BUILTIN, LOW);
 
   // Delay after power on to allow for serial monitor to be connected and to make sure beeps are heard clearly.
   delay(3000);
