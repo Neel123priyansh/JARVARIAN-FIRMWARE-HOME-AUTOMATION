@@ -3,7 +3,7 @@
 import json
 
 def generate_load_function(json_data):
-    load_function = "This file is generated automaticly by create_config.py\n\n"
+    load_function = "// This file is generated automaticly by `create_config.py`\n\n"
     load_function += "void loadConfig(struct Config &config) {\n"
     load_function += "    // Initialize WiFi configuration\n"
     load_function += f"    config.wifi.ssid = \"{json_data['wifi']['ssid']}\";\n"
