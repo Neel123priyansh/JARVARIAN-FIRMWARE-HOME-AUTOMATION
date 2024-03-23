@@ -48,10 +48,10 @@ void printConfig(Config &config) {
     for (const auto &device : config.devices) {
         Serial.print("Name: ");
         Serial.print(device.name.c_str());
-        Serial.print(" | Type: ");
-        Serial.print(device.type.c_str());
-        Serial.print(" | Pin: ");
-        Serial.print(String(device.pin).c_str());
+        Serial.print(" | StatusPin: ");
+        Serial.print(String(device.statusPin).c_str());
+        Serial.print(" | ControlPin: ");
+        Serial.print(String(device.controlPin).c_str());
         Serial.println();
     }
 }
