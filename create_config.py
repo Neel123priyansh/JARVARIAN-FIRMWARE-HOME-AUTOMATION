@@ -1,4 +1,4 @@
-"""This file creates `src/config.h` file based on `data/config.json` file."""
+"""This file creates `src/pinConfig.h` file based on `data/config.json` file."""
 
 import json
 
@@ -30,7 +30,7 @@ def generate_load_function(json_data):
     return load_function
 
 # Write config.h file
-with open('src/config.h', 'w', encoding='utf-8') as file:
+with open('src/pinConfig.h', 'w', encoding='utf-8') as file:
     with open('data/config.json', 'r', encoding='utf-8') as json_file:
         config = json.loads(json_file.read())  # Read the content of the file
     file.write(generate_load_function(config))

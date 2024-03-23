@@ -1,7 +1,8 @@
 #include <string>
 #include <vector>
 
-struct WiFiConfig {
+struct WiFiConfig
+{
     std::string ssid;
     std::string password;
     std::string clientID;
@@ -11,7 +12,8 @@ struct WiFiConfig {
     std::string dns;
 };
 
-struct MQTTConfig {
+struct MQTTConfig
+{
     std::string host;
     std::string port;
     std::string clientID;
@@ -20,16 +22,18 @@ struct MQTTConfig {
     std::string topic;
 };
 
-struct Device{
+struct Device
+{
     std::string name;
     std::string type;
     std::int8_t pin;
-    Device(const std::string& name, const std::string& type, const std::int8_t& pin) : name(name), type(type), pin(pin) {}
+    Device(const std::string &name, const std::string &type, const std::int8_t &pin) : name(name), type(type), pin(pin) {}
 
     // std::int8_t state;
 };
 
-struct Config {
+struct Config
+{
     std::vector<Device> devices;
     WiFiConfig wifi;
     MQTTConfig mqtt;

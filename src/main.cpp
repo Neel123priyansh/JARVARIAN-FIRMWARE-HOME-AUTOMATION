@@ -3,7 +3,7 @@
 #include <ArduinoJson.h>
 #include <checks.h>
 #include <structs.h>
-#include <config.h>
+#include <pinConfig.h>
 #include <utils.h>
 
 // Globlal configuration
@@ -23,7 +23,8 @@ unsigned long keep_alive_counter = 1;
 void setup()
 {
   // Initialize Serial if debug is enabled
-  if (debug) Serial.begin(115200);
+  if (debug)
+    Serial.begin(115200);
 
   Serial.println("-----------------------");
   Serial.println("Serial initialized");
@@ -47,7 +48,6 @@ void setup()
   printConfig(config);
   connectToWiFi(config.wifi);
   connectToMQTT(callback);
-  
 }
 void loop()
 {
@@ -66,7 +66,8 @@ void loop()
   if (currentMillis - previousMillis > 50000)
   {
     previousMillis = currentMillis;
-    if (mqttclient.connected()){
+    if (mqttclient.connected())
+    {
       publish_keep_alive_message(keep_alive_counter);
       keep_alive_counter++;
     }

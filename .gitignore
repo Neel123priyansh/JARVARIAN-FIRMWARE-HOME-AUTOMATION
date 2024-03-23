@@ -1,6 +1,6 @@
 .pio
 .vscode
 data/config.json
-src/config.h
+src/pinConfig.h
 test*
 temp*
