@@ -35,13 +35,16 @@ void publish_keep_alive_message(unsigned long &keep_alive_counter)
     mqttclient.publish(config.mqtt.topic.c_str(), docString.c_str());
 }
 
-void publish_current_state_message(int8_t pinNumber, String deviceName)
+void publish_current_state_message(int8_t statusPin, int8_t state, String deviceName)
 {
     StaticJsonDocument<256> doc;
     doc["origin"] = config.mqtt.clientID.c_str();
     doc["messageType"] = "current_state";
     doc["message"]["device_id"] = deviceName;
-    doc["message"]["state"] = digitalRead(pinNumber) ? "ON" : "OFF";
+    if (state == -1)
+        doc["message"]["state"] = digitalRead(statusPin) ? "ON" : "OFF";
+    else
+        doc["message"]["state"] = state ? "ON" : "OFF";
 
     String docString;
     serializeJson(doc, docString);
@@ -112,13 +115,15 @@ void mqttCallback(char *topic, byte *payload, unsigned short int length)
                 if (state.equals("ON"))
                 {
                     digitalWrite(config.devices[i].controlPin, HIGH);
-                    publish_current_state_message(config.devices[i].statusPin, name);
+                    config.devices[i].state = 1;
+                    publish_current_state_message(-1, 1, name);
                     return;
                 }
                 else if (state.equals("OFF"))
                 {
                     digitalWrite(config.devices[i].controlPin, LOW);
-                    publish_current_state_message(config.devices[i].statusPin, name);
+                    config.devices[i].state = 0;
+                    publish_current_state_message(-1, 0, name);
                     return;
                 }
                 else
@@ -153,7 +158,7 @@ void mqttCallback(char *topic, byte *payload, unsigned short int length)
                 Serial.println("Device ControlPin: " + String(config.devices[i].controlPin));
                 Serial.println("Device StatusPin: " + String(config.devices[i].statusPin));
 
-                publish_current_state_message(config.devices[i].statusPin, name);
+                publish_current_state_message(config.devices[i].statusPin, -1, name);
                 return;
             }
         }

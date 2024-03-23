@@ -87,7 +87,7 @@ void loop()
     if (state != config.devices[i].state)
     {
       config.devices[i].state = state;
-      publish_current_state_message(config.devices[i].statusPin, String(config.devices[i].name.c_str()));
+      publish_current_state_message(-1, state, String(config.devices[i].name.c_str()));
     }
   }
 }
