@@ -114,14 +114,26 @@ void mqttCallback(char *topic, byte *payload, unsigned short int length)
 
                 if (state.equals("ON"))
                 {
-                    digitalWrite(config.devices[i].controlPin, HIGH);
+                    if (config.devices[i].state == 1)
+                    {
+                        Serial.println("Device is already ON");
+                        publish_error_message("Device is already ON");
+                        return;
+                    }
+                    trigerTTP223(config.devices[i]);
                     config.devices[i].state = 1;
                     publish_current_state_message(-1, 1, name);
                     return;
                 }
                 else if (state.equals("OFF"))
                 {
-                    digitalWrite(config.devices[i].controlPin, LOW);
+                    if (config.devices[i].state == 0)
+                    {
+                        Serial.println("Device is already OFF");
+                        publish_error_message("Device is already OFF");
+                        return;
+                    }
+                    trigerTTP223(config.devices[i]);
                     config.devices[i].state = 0;
                     publish_current_state_message(-1, 0, name);
                     return;

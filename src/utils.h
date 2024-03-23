@@ -55,3 +55,12 @@ void printConfig(Config &config) {
         Serial.println();
     }
 }
+
+void trigerTTP223(Device &device) {
+    Serial.println("-----------------------");
+    Serial.println("Trigerring TTP223 sensor...");
+    digitalWrite(device.controlPin, HIGH);
+    delay(100);
+    digitalWrite(device.controlPin, LOW);
+    Serial.println("TTP223 sensor triggered");
+}
