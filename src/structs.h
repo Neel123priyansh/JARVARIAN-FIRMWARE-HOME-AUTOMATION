@@ -25,11 +25,10 @@ struct MQTTConfig
 struct Device
 {
     std::string name;
-    std::string type;
-    std::int8_t pin;
-    Device(const std::string &name, const std::string &type, const std::int8_t &pin) : name(name), type(type), pin(pin) {}
-
-    // std::int8_t state;
+    std::int8_t statusPin;
+    std::int8_t controlPin;
+    std::int8_t state; // 0: OFF, 1: ON
+    Device(const std::string &name, const std::int8_t &statusPin, const std::int8_t &controlPin, const std::int8_t &state = 0) : name(name), statusPin(statusPin), controlPin(controlPin), state(state) {}
 };
 
 struct Config

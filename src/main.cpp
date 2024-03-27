@@ -47,7 +47,7 @@ void setup()
   loadConfig(config);
   printConfig(config);
   connectToWiFi(config.wifi);
-  connectToMQTT(callback);
+  connectToMQTT(mqttCallback);
 }
 void loop()
 {
@@ -75,8 +75,19 @@ void loop()
     {
       Serial.println("-----------------------");
       Serial.println("MQTT Connection lost.. Reconnecting..");
-      connectToMQTT(callback);
+      connectToMQTT(mqttCallback);
     }
   }
   mqttclient.loop();
+
+  // Check for changes in the state of the pins
+  for (size_t i = 0; i < config.devices.size(); i++)
+  {
+    u_int8_t state = digitalRead(config.devices[i].statusPin);
+    if (state != config.devices[i].state)
+    {
+      config.devices[i].state = state;
+      publish_current_state_message(-1, state, String(config.devices[i].name.c_str()));
+    }
+  }
 }

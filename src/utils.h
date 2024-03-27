@@ -9,7 +9,8 @@ void statusBuzzer(int times, int delayTime)
     }
 }
 
-void printConfig(Config &config) {
+void printConfig(Config &config)
+{
     Serial.println("-----------------------");
     // Print WiFi configuration
     Serial.println("WiFi Configuration:");
@@ -45,13 +46,24 @@ void printConfig(Config &config) {
 
     // Print devices configuration
     Serial.println("\nDevices:");
-    for (const auto &device : config.devices) {
+    for (const auto &device : config.devices)
+    {
         Serial.print("Name: ");
         Serial.print(device.name.c_str());
-        Serial.print(" | Type: ");
-        Serial.print(device.type.c_str());
-        Serial.print(" | Pin: ");
-        Serial.print(String(device.pin).c_str());
+        Serial.print(" | StatusPin: ");
+        Serial.print(String(device.statusPin).c_str());
+        Serial.print(" | ControlPin: ");
+        Serial.print(String(device.controlPin).c_str());
         Serial.println();
     }
+}
+
+void trigerTTP223(Device &device)
+{
+    Serial.println("-----------------------");
+    Serial.println("Trigerring TTP223 sensor...");
+    digitalWrite(device.controlPin, HIGH);
+    delay(100);
+    digitalWrite(device.controlPin, LOW);
+    Serial.println("TTP223 sensor triggered");
 }

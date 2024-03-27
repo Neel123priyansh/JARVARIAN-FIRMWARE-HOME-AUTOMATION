@@ -35,13 +35,16 @@ void publish_keep_alive_message(unsigned long &keep_alive_counter)
     mqttclient.publish(config.mqtt.topic.c_str(), docString.c_str());
 }
 
-void publish_current_state_message(int pinNumber, String deviceName)
+void publish_current_state_message(int8_t statusPin, int8_t state, String deviceName)
 {
     StaticJsonDocument<256> doc;
     doc["origin"] = config.mqtt.clientID.c_str();
     doc["messageType"] = "current_state";
     doc["message"]["device_id"] = deviceName;
-    doc["message"]["state"] = digitalRead(pinNumber) ? "ON" : "OFF";
+    if (state == -1)
+        doc["message"]["state"] = digitalRead(statusPin) ? "ON" : "OFF";
+    else
+        doc["message"]["state"] = state ? "ON" : "OFF";
 
     String docString;
     serializeJson(doc, docString);
@@ -62,7 +65,7 @@ void publish_error_message(String message)
     mqttclient.publish(config.mqtt.topic.c_str(), docString.c_str());
 }
 
-void callback(char *topic, byte *payload, unsigned short int length)
+void mqttCallback(char *topic, byte *payload, unsigned short int length)
 {
     // Convert payload to a JSON string
     String message;
@@ -98,35 +101,47 @@ void callback(char *topic, byte *payload, unsigned short int length)
         String state = messageDoc["message"]["state"].as<String>();
 
         // Loop through the devices array in the JSON document
-        for (const auto &device : config.devices)
+        for (size_t i = 0; i < config.devices.size(); i++)
         {
-            String name = device.name.c_str();
-            int pin = device.pin;
-            String type = device.type.c_str();
-
-            if (deviceId.equals(name))
+            if (deviceId.equals(String(config.devices[i].name.c_str())))
             {
+                String name = config.devices[i].name.c_str();
+
                 Serial.println("Device found in config file");
                 Serial.println("Device name: " + name);
-                Serial.println("Device pin: " + String(pin));
-                Serial.println("Device type: " + type);
+                Serial.println("Device ControlPin: " + String(config.devices[i].controlPin));
+                Serial.println("Device StatusPin: " + String(config.devices[i].statusPin));
 
                 if (state.equals("ON"))
                 {
-                    digitalWrite(pin, HIGH);
-                    publish_current_state_message(pin, name);
+                    if (config.devices[i].state == 1)
+                    {
+                        Serial.println("Device is already ON");
+                        publish_error_message("Device is already ON");
+                        return;
+                    }
+                    trigerTTP223(config.devices[i]);
+                    config.devices[i].state = 1;
+                    publish_current_state_message(-1, 1, name);
                     return;
                 }
                 else if (state.equals("OFF"))
                 {
-                    digitalWrite(pin, LOW);
-                    publish_current_state_message(pin, name);
+                    if (config.devices[i].state == 0)
+                    {
+                        Serial.println("Device is already OFF");
+                        publish_error_message("Device is already OFF");
+                        return;
+                    }
+                    trigerTTP223(config.devices[i]);
+                    config.devices[i].state = 0;
+                    publish_current_state_message(-1, 0, name);
                     return;
                 }
                 else
                 {
-                    Serial.println("Invalid state" + state);
-                    publish_error_message("Invalid state" + state);
+                    Serial.println("Invalid state" + state + ". Valid states are `ON` and `OFF`");
+                    publish_error_message("Invalid state" + state + ". Valid states are `ON` and `OFF`");
                     return;
                 }
             }
@@ -144,20 +159,18 @@ void callback(char *topic, byte *payload, unsigned short int length)
         String deviceId = messageDoc["message"]["device_id"].as<String>();
 
         // Loop through the devices array in the JSON document
-        for (const auto &device : config.devices)
+        for (size_t i = 0; i < config.devices.size(); i++)
         {
-            String name = device.name.c_str();
-            int pin = device.pin;
-            String type = device.type.c_str();
+            String name = config.devices[i].name.c_str();
 
             if (deviceId.equals(name))
             {
                 Serial.println("Device found in config file");
                 Serial.println("Device name: " + name);
-                Serial.println("Device pin: " + String(pin));
-                Serial.println("Device type: " + type);
+                Serial.println("Device ControlPin: " + String(config.devices[i].controlPin));
+                Serial.println("Device StatusPin: " + String(config.devices[i].statusPin));
 
-                publish_current_state_message(pin, name);
+                publish_current_state_message(config.devices[i].statusPin, -1, name);
                 return;
             }
         }

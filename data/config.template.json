@@ -20,8 +20,8 @@
   "devices": [
     {
       "name": "",
-      "type": "", // `INPUT` or `OUTPUT`
-      "pin": "" // See ReadMe.md for pin mapping
+      "statusPin": "",
+      "controlPin": ""
     }
   ]
 }
