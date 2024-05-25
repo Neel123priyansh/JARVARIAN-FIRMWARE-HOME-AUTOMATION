@@ -1,27 +1,6 @@
 #include <string>
 #include <vector>
 
-struct WiFiConfig
-{
-    std::string ssid;
-    std::string password;
-    std::string clientID;
-    std::string ip;
-    std::string gateway;
-    std::string subnet;
-    std::string dns;
-};
-
-struct MQTTConfig
-{
-    std::string host;
-    std::string port;
-    std::string clientID;
-    std::string username;
-    std::string password;
-    std::string topic;
-};
-
 struct Device
 {
     std::string name;
@@ -34,6 +13,13 @@ struct Device
 struct Config
 {
     std::vector<Device> devices;
-    WiFiConfig wifi;
-    MQTTConfig mqtt;
+    const char *ssid;
+    const char *password;
+    const char *clientID;
+    const char *mqtt_broker;
+    const char *mqtt_port;
+    const char *mqtt_username;
+    const char *mqtt_password;
+    const char *mqtt_topic;
+    const char *uuid;
 };

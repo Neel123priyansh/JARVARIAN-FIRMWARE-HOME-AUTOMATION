@@ -1,17 +1,17 @@
 void connectToMQTT(void (*callback)(char *, byte *, unsigned short int))
 {
-    String server = config.mqtt.host.c_str();
-    String port = config.mqtt.port.c_str();
-    mqttclient.setServer(server.c_str(), port.toInt());
+    const char *server = config.mqtt_broker;
+    int port = atoi(config.mqtt_port);
+    mqttclient.setServer(server, port);
     mqttclient.setKeepAlive(60);
     mqttclient.setCallback(callback);
 
-    if (mqttclient.connect(config.mqtt.clientID.c_str(), config.mqtt.username.c_str(), config.mqtt.password.c_str()))
+    if (mqttclient.connect(config.clientID, config.mqtt_username, config.mqtt_password))
     {
-        mqttclient.subscribe(config.mqtt.topic.c_str());
+        mqttclient.subscribe(config.mqtt_topic);
         Serial.println("Connected to MQTT Broker");
         Serial.print("Subscribed to topic: ");
-        Serial.println(config.mqtt.topic.c_str());
+        Serial.println(config.mqtt_topic);
     }
     else
     {
@@ -25,20 +25,20 @@ void connectToMQTT(void (*callback)(char *, byte *, unsigned short int))
 void publish_keep_alive_message(unsigned long &keep_alive_counter)
 {
     StaticJsonDocument<256> doc;
-    doc["origin"] = config.mqtt.clientID.c_str();
+    doc["origin"] = config.clientID;
     doc["messageType"] = "keep_alive";
     doc["message"]["keep_alive_counter"] = keep_alive_counter;
     doc["message"]["uptime"] = millis() / 1000; // uptime in seconds
 
     String docString;
     serializeJson(doc, docString);
-    mqttclient.publish(config.mqtt.topic.c_str(), docString.c_str());
+    mqttclient.publish(config.mqtt_topic, docString.c_str());
 }
 
 void publish_current_state_message(int8_t statusPin, int8_t state, String deviceName)
 {
     StaticJsonDocument<256> doc;
-    doc["origin"] = config.mqtt.clientID.c_str();
+    doc["origin"] = config.clientID;
     doc["messageType"] = "current_state";
     doc["message"]["device_id"] = deviceName;
     if (state == -1)
@@ -49,20 +49,20 @@ void publish_current_state_message(int8_t statusPin, int8_t state, String device
     String docString;
     serializeJson(doc, docString);
     Serial.println("Response: " + docString);
-    mqttclient.publish(config.mqtt.topic.c_str(), docString.c_str());
+    mqttclient.publish(config.mqtt_topic, docString.c_str());
 }
 
 void publish_error_message(String message)
 {
     StaticJsonDocument<256> doc;
-    doc["origin"] = config.mqtt.clientID.c_str();
+    doc["origin"] = config.clientID;
     doc["messageType"] = "error";
     doc["message"]["message"] = message;
 
     String docString;
     serializeJson(doc, docString);
     Serial.println("Response: " + docString);
-    mqttclient.publish(config.mqtt.topic.c_str(), docString.c_str());
+    mqttclient.publish(config.mqtt_topic, docString.c_str());
 }
 
 void mqttCallback(char *topic, byte *payload, unsigned short int length)
@@ -76,7 +76,7 @@ void mqttCallback(char *topic, byte *payload, unsigned short int length)
 
     // Parse JSON string to extract message details
     DynamicJsonDocument messageDoc(256);
-    DeserializationError error = deserializeJson(messageDoc, message);
+    DeserializationError error = deserializeJson( messageDoc, message);
     if (error)
     {
         Serial.println("Not a valid JSON message");
@@ -85,7 +85,7 @@ void mqttCallback(char *topic, byte *payload, unsigned short int length)
     }
 
     // Extract message details
-    if (messageDoc["origin"].as<String>().equals(config.mqtt.clientID.c_str()))
+    if (messageDoc["origin"].as<String>().equals(config.clientID))
         return;
 
     Serial.println("-----------------------");

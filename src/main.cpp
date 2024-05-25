@@ -3,27 +3,27 @@
 #include <ArduinoJson.h>
 #include <checks.h>
 #include <structs.h>
-#include <pinConfig.h>
 #include <utils.h>
+#include <WiFiProvisioning.h>
 
-// Globlal configuration
-Config config;
 
 // MQTT Client
 WiFiClient wifiClient;
 PubSubClient mqttclient(wifiClient);
 
-#include <WiFiManager.h>
+Config config;
+
+
+// #include <WiFiManager.h>
 #include <MQTTManager.h>
 
-// Setting `0` as first `keep-alive` message is sent immediately after connection.
 unsigned long previousMillis = 0;
 unsigned long keep_alive_counter = 1;
 
 void setup()
 {
-  // Initialize Serial if debug is enabled
-  if (debug)
+  // Initialize Serial if DEBUG is enabled
+  if (DEBUG)
     Serial.begin(115200);
 
   Serial.println("-----------------------");
@@ -32,37 +32,40 @@ void setup()
   // Initialize Buzzer and In-Built LED
   pinMode(STATUS_BUZZER, OUTPUT);
   pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(dataPin, OUTPUT);
+  pinMode(clockPin, OUTPUT);
+  pinMode(latchPin, OUTPUT);
+  updateShiftRegister();
 
-  // Turn ON the built-in LED
-  if (is_esp32)
-    digitalWrite(LED_BUILTIN, HIGH);
-  else if (is_esp8266)
-    // (In-Built LED works in Inverted Mode)
-    digitalWrite(LED_BUILTIN, LOW);
+  WiFi.mode(WIFI_AP);
+  WiFi.softAP(ssid, password);
+  server.begin();
+  Serial.println("SoftAP Started");
+  Serial.println(WiFi.softAPIP());
+  Serial.println(WiFi.softAPmacAddress());
+  
 
-  // Delay after power on to allow for serial monitor to be connected and to make sure beeps are heard clearly.
-  delay(3000);
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
+            { handleRootGet(request); });
+  server.on("/", HTTP_POST, [](AsyncWebServerRequest *request)
+            { methodNotAllowed(request); });
+  server.on("/config", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
+            { handle_received_config(request, data, len, index, total); });
+  
 
-  // Load Configuration
-  loadConfig(config);
-  printConfig(config);
-  connectToWiFi(config.wifi);
-  connectToMQTT(mqttCallback);
 }
 void loop()
 {
+
   unsigned long currentMillis = millis();
 
-  // WiFi
   if (WiFi.status() != WL_CONNECTED && currentMillis - previousMillis >= 10000)
   {
     Serial.println("Connecting to Wifi...");
     previousMillis = currentMillis;
     statusBuzzer(2, 100);
-    connectToWiFi(config.wifi);
+    connectToMQTT(mqttCallback);
   }
-
-  // MQTT if connected: publish a message roughly every 50 seconds else: reconnect
   if (currentMillis - previousMillis > 50000)
   {
     previousMillis = currentMillis;
@@ -80,7 +83,6 @@ void loop()
   }
   mqttclient.loop();
 
-  // Check for changes in the state of the pins
   for (size_t i = 0; i < config.devices.size(); i++)
   {
     u_int8_t state = digitalRead(config.devices[i].statusPin);
