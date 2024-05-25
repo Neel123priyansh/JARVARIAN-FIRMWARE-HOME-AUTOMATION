@@ -1,4 +1,12 @@
 
+#define STATUS_BUZZER 27
+#define dataPin 14
+#define latchPin 27
+#define clockPin 26
+#define WIFI_SSID_ADDR 0
+#define WIFI_PASS_ADDR 100
+#define EEPROM_SIZE 512
+
 uint8_t outputState = 0; 
 
 void statusBuzzer(int times, int delayTime)
