@@ -1,9 +1,12 @@
+// Default header files
 #include <Arduino.h>
+#include <EEPROM.h>
 #include <PubSubClient.h>
+
+// Custom headers
 #include <structs.h>
 #include <utils.h>
 #include <WiFiProvisioning.h>
-#include <EEPROM.h>
 
 // MQTT Client
 WiFiClient wifiClient;
