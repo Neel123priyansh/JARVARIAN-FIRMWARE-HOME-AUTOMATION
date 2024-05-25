@@ -5,9 +5,6 @@
 #include <WiFiProvisioning.h>
 #include <EEPROM.h>
 
-
-
-
 // MQTT Client
 WiFiClient wifiClient;
 PubSubClient mqttclient(wifiClient);
